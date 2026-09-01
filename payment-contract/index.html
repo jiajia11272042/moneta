@@ -437,16 +437,17 @@ function renderList(){
     const canEdit=r.create;const canSeal=r.seal;const canVoid=r.void;
     const a=[];
     a.push(`<a onclick="openForm('${c.id}')">查看</a>`);
-    a.push(canEdit?`<a onclick="openForm('${c.id}')">编辑</a>`:`<a class="disabled">编辑</a>`);
+    const sealLocked=['已盖章','已归档'].includes(c.seal)||c.seal==='审批中';
+    a.push((canEdit&&!sealLocked)?`<a onclick="openForm('${c.id}')">编辑</a>`:`<a class="disabled" title="${sealLocked?'提交盖章后禁止编辑，需先终止盖章':'无编辑权限'}">编辑</a>`);
     a.push(canEdit?`<a onclick="toast('演示：复制合同为新草稿')">复制</a>`:`<a class="disabled">复制</a>`);
     a.push(`<a onclick="go('seal')">盖章</a>`);
     a.push(canVoid?`<a onclick="toast('演示：作废 cancelContract（审批中/待盖章/待归档，不限创建人）；已通过moneta审批的作废需再走审批')">作废</a>`:`<a class="disabled">作废</a>`);
-    a.push(canSeal?`<a onclick="toast('演示：终止盖章 stopContract（仅集团审批流程中·仅创建人）；moneta 侧不做内部审批，直接调用集团接口')">终止盖章</a>`:`<a class="disabled">终止盖章</a>`);
+    a.push(canSeal?`<a onclick="toast('演示：终止盖章 — 仅创建人(商务)可终止集团审批流程中的合同；直接调集团接口、无需销管审批、不额外通知销管，仅更新盖章状态')">终止盖章</a>`:`<a class="disabled">终止盖章</a>`);
     a.push(r.grant?`<a onclick="go('grant')">授权</a>`:`<a class="disabled">授权</a>`);
     if(c.coopStatus==='暂停合作'){
-      a.push(canVoid?`<a onclick="toast('演示：恢复合作 — 选恢复生效时间(可未来)，生成新的正常合作区间；恢复后按计提规则继续计提')">恢复合作</a>`:`<a class="disabled">恢复合作</a>`);
+      a.push(canVoid?`<a onclick="toast('演示：恢复合作 — 填恢复生效时间(可未来) → 提交销管审批 → 通过后到生效日恢复正常合作')">恢复合作</a>`:`<a class="disabled">恢复合作</a>`);
     }else{
-      a.push(canVoid?`<a onclick="toast('演示：暂停合作 — 选暂停生效时间(可未来)+原因，生成暂停区间；不影响历史计提，生效后按计提规则不再新增计提')">暂停合作</a>`:`<a class="disabled">暂停合作</a>`);
+      a.push(canVoid?`<a onclick="toast('演示：暂停合作 — 填暂停生效时间(可未来)+原因 → 提交销管审批 → 通过后到生效日生效；不影响历史计提')">暂停合作</a>`:`<a class="disabled">暂停合作</a>`);
     }
     const canQuick = curRole().quick===1;
     const nameIcon = '';
@@ -512,11 +513,12 @@ const FORM_HTML=`
   <div class="fld"><label><span class="req">*</span>结算周期</label><select id="f_cycle" onchange="linkCycle()"><option>月结</option><option>季结</option><option>半年结</option><option>年结</option><option>一次性</option><option value="other">其他</option></select></div>
   <div class="fld hidden" id="w_cycleOther"><label>其他说明（50字）</label><input maxlength="50" placeholder="≤50字"></div>
   <div class="fld"><label><span class="req">*</span>付款方式</label><select id="f_pay" onchange="linkPay()"><option value="post">后付</option><option value="pre">预付</option></select><div class="hint">单选，枚举仅预付/后付</div></div>
-  <div class="fld" id="w_period"><label><span class="req">*</span>付款账期</label><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:#909399">见票后</span><input style="width:80px" placeholder="数字"><span style="font-size:12px;color:#909399">天</span></div><div class="hint">见票后=对方开票后 N 天付款；工作日/自然日 TODO</div></div>
-  <div class="fld"><label><span class="req">*</span>结算币种</label><select><option>USD</option><option>INR</option><option>EUR</option><option>RUB</option><option>CNY</option><option>HKD</option><option>SGD</option></select></div>
+  <div class="fld" id="w_period"><label><span class="req">*</span>付款账期</label><input placeholder="见票后X天"><div class="hint">本期不做系统级格式限制，可自由填写；规范是否收紧待业务确认</div></div>
+  <div class="fld"><label><span class="req">*</span>结算币种</label><select id="f_curSettle" onchange="linkRate()"><option>USD</option><option>INR</option><option>EUR</option><option>RUB</option><option>CNY</option><option>HKD</option><option>SGD</option></select></div>
+  <div class="fld"><label><span class="req">*</span>计价币种</label><select id="f_curPrice" onchange="linkRate()"><option>USD</option><option>INR</option><option>EUR</option><option>RUB</option><option>CNY</option><option>HKD</option><option>SGD</option></select><div class="hint">与结算币种不一致时，汇率来源必填</div></div>
   <div class="fld"><label><span class="req">*</span>税率</label><select><option>0%</option><option>3%</option><option>6%</option><option>8%</option><option>9%</option></select></div>
   <div class="fld"><label><span class="req">*</span>税款承担方</label><select><option>我方</option><option>对方</option><option>各自承担</option></select></div>
-  <div class="fld"><label>汇率来源</label><input placeholder="结算币种≠计价币种时必填"></div>
+  <div class="fld"><label><span id="rq_rate" style="display:none" class="req">*</span>汇率来源</label><input id="f_rate" placeholder="计价币种≠结算币种时必填"><div class="hint" id="rate_hint">两币种一致 → 非必填</div></div>
   <div class="fld"><label><span class="req">*</span>结算模式（多选）</label><div class="multi"><label><input type="checkbox" id="sm_cps" checked onchange="linkCps()">收入分成(CPS)</label><label><input type="checkbox">固定费用</label><label><input type="checkbox">CPM</label><label><input type="checkbox">其他</label></div></div>
   <div class="fld hidden cps"><label>分成基数</label><select><option>收入流水</option><option>净利润</option><option>按 Service Order</option></select></div>
   <div class="fld hidden cps"><label><span class="req">*</span>分成比例-对方</label><input id="f_shareO" type="number" placeholder="%" oninput="calcShare()"></div>
@@ -539,8 +541,9 @@ const FORM_HTML=`
     <button class="btn btn-outline btn-sm" onclick="addOur()">+ 添加主体</button>
   </div>
   <div class="tbl-scroll"><table class="grid"><thead><tr>
-    <th>我方主体 *</th><th>注册地（自动）</th><th>主体地址（到门牌号）*</th><th>主体邮编 *</th><th>操作</th>
+    <th>我方主体 *</th><th>注册地（自动）</th><th>计提主体 *</th><th>操作</th>
   </tr></thead><tbody id="tblOur"></tbody></table></div>
+  <div class="hint">多条我方主体中须且只能指定 1 条为「计提主体」（用于计提归属）。我方主体地址/邮编已按会议结论删除（集团不需要）</div>
 
   <div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px">
     <b style="font-size:13px">B. 客户（对方）签约信息</b>
@@ -611,6 +614,13 @@ function linkDpa(){show('w_dpa',document.getElementById('f_dpa').value==='yes')}
 function linkNda(){show('w_nda',document.getElementById('f_nda').value==='yes')}
 function linkCycle(){show('w_cycleOther',document.getElementById('f_cycle').value==='other')}
 function linkPay(){/* 单选付款方式，账期始终展示一个 */}
+function linkRate(){
+  const a=document.getElementById('f_curSettle'),b=document.getElementById('f_curPrice');
+  if(!a||!b)return; const diff=a.value!==b.value;
+  const rq=document.getElementById('rq_rate'), h=document.getElementById('rate_hint');
+  if(rq) rq.style.display=diff?'inline':'none';
+  if(h){h.textContent=diff?'计价币种 ≠ 结算币种 → 汇率来源必填':'两币种一致 → 非必填';h.style.color=diff?'#f44336':'#c0c4cc';}
+}
 function linkCps(){const el=document.getElementById('sm_cps');const cps=el?el.checked:true;document.querySelectorAll('.cps').forEach(e=>e.classList.toggle('hidden',!cps))}
 function calcShare(){const o=parseFloat(document.getElementById('f_shareO').value);if(!isNaN(o))document.getElementById('f_shareM').value=(100-o)+'%'}
 function linkGuar(){show('w_guar',document.getElementById('f_guar').value==='yes')}
@@ -619,7 +629,7 @@ function linkEsign(){const y=document.getElementById('f_esign').value==='yes';do
 function linkAbroad(){const ab=document.getElementById('f_abroad').value==='yes';show('w_platform',!ab);show('w_platformAbroad',ab)}
 function linkIsOurs(){const ours=document.getElementById('f_isours').value==='yes';show('w_ourCompany',ours);show('w_custCompany',!ours);['w_ourEmail','w_ourCc','w_otherEmail','w_otherCc'].forEach(x=>show(x,!ours))}
 function show(id,cond){const el=document.getElementById(id);if(el)el.classList.toggle('hidden',!cond)}
-function bindFormLinkage(){renderOur();renderCust();renderSignParties();renderAttach();
+function bindFormLinkage(){renderOur();renderCust();linkRate();renderSignParties();renderAttach();
   const sv=document.getElementById('f_signValid');
   if(sv&&!sv.value){const d=new Date();d.setDate(d.getDate()+30);sv.value=d.toISOString().slice(0,10);}linkBiz();linkForm();linkRenew();linkPause();linkDpa();linkNda();linkCycle();linkPay();linkCps();linkGuar();linkDeposit();linkEsign();linkIsOurs()}
 
@@ -684,7 +694,7 @@ function openSealModal(){
 function revokeSeal(){
   if(curRole().seal!==1){toast('当前角色无终止盖章权限点');return}
   sealRevoked=true;renderMachine();document.getElementById('contractCode').textContent='—（盖章完成后回传）';
-  pushLog('终止盖章','已终止','调用 stopContract 成功（仅创建人；moneta 不做内部审批，直接调集团）');toast('已终止盖章');
+  pushLog('终止盖章','已终止','调用 stopContract 成功（仅创建人；无需销管审批，不额外通知，仅更新状态）');toast('已终止盖章');
 }
 function mockCallback(){
   if(sealRevoked){toast('已撤销，请重新提交盖章');return}
@@ -985,18 +995,18 @@ function renderSandbox(){
 /* ============ 签约信息：多我方主体 / 多客户 ============ */
 const OUR_OPTS=['Xiaomi H.K. Limited','Xiaomi Singapore Pte.','Xiaomi Technology India'];
 const REG_MAP={'Xiaomi H.K. Limited':'中国','Xiaomi Singapore Pte.':'新加坡','Xiaomi Technology India':'印度'};
-let OURS=[{name:'Xiaomi H.K. Limited',addr:'',zip:''}];
+let OURS=[{name:'Xiaomi H.K. Limited',accrual:true}];
 let CUSTS=[{group:'Acme Group',company:'Acme Media Ltd',reg:'新加坡',addr:'',zip:''}];
 function renderOur(){
   const tb=document.getElementById('tblOur'); if(!tb)return;
   tb.innerHTML=OURS.map((o,i)=>`<tr>
     <td><select onchange="OURS[${i}].name=this.value;renderOur();renderSignParties()">${OUR_OPTS.map(v=>`<option${v===o.name?' selected':''}>${v}</option>`).join('')}</select></td>
     <td><input value="${REG_MAP[o.name]||''}" disabled style="width:90px"></td>
-    <td><input value="${o.addr}" placeholder="国家、城市、详细地址" oninput="OURS[${i}].addr=this.value"></td>
-    <td><input value="${o.zip}" placeholder="邮编" style="width:100px" oninput="OURS[${i}].zip=this.value"></td>
+    <td style="text-align:center"><input type="radio" name="accrualSubject" ${o.accrual?'checked':''} onchange="setAccrual(${i})"> ${o.accrual?'<span class="tag t-blue">计提主体</span>':''}</td>
     <td class="row-actions">${OURS.length>1?`<a onclick="OURS.splice(${i},1);renderOur();renderSignParties()">删除</a>`:'<a class="disabled">删除</a>'}</td></tr>`).join('');
 }
-function addOur(){OURS.push({name:OUR_OPTS[0],addr:'',zip:''});renderOur();renderSignParties();toast('已添加我方主体')}
+function addOur(){OURS.push({name:OUR_OPTS[0],accrual:false});renderOur();renderSignParties();toast('已添加我方主体')}
+function setAccrual(i){OURS.forEach((o,k)=>o.accrual=(k===i));renderOur();toast('已指定计提主体：'+OURS[i].name)}
 function renderCust(){
   const tb=document.getElementById('tblCust'); if(!tb)return;
   tb.innerHTML=CUSTS.map((c,i)=>`<tr>
