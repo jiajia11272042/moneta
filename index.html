@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moneta · 原型索引</title>
+<link rel="icon" href="brand/favicon.ico" sizes="any">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#eef1f5;color:#303133;padding:40px 20px}
+.wrap{max-width:880px;margin:0 auto}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+h1{font-family:Georgia,serif;font-size:26px;color:#1e2a3a}
+.sub{font-size:13px;color:#909399;margin-bottom:28px}
+.card{background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:14px;text-decoration:none;display:block;color:inherit;transition:box-shadow .2s,transform .15s}
+.card:hover{box-shadow:0 8px 22px rgba(0,0,0,.12);transform:translateY(-2px)}
+.t{font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.d{font-size:13px;color:#606266;line-height:1.7}
+.tag{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;background:#e8f1ff;color:#3981ff;margin-left:8px}
+.foot{font-size:12px;color:#a8b0bb;margin-top:26px;line-height:1.8}
+</style></head><body><div class="wrap">
+<div class="head">
+  <svg width="44" height="44" viewBox="0 0 80 80">
+    <rect x="8" y="8" width="64" height="64" rx="15" fill="#1e2a3a"/>
+    <rect x="14" y="14" width="52" height="52" rx="10" fill="none" stroke="#C9A24B" stroke-width="1.4"/>
+    <text x="40" y="42" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="27" fill="#F3EEE3">M</text>
+    <line x1="29" y1="52" x2="51" y2="52" stroke="#C9A24B" stroke-width="1.9" stroke-linecap="round"/>
+    <line x1="32" y1="58" x2="48" y2="58" stroke="#C9A24B" stroke-width="1.9" stroke-linecap="round" opacity=".7"/>
+    <circle cx="61" cy="19" r="5" fill="#C9A24B"/>
+  </svg>
+  <h1>Moneta</h1>
+</div>
+<div class="sub">Contract · to · Cash ——「客户引入 → 合同管理 → 计提 → 对账 → 开票 → 应收」业务中台 · 交互原型索引</div>
+
+<a class="card" href="payment-contract/">
+  <div class="t">付款合同 + 权限改造<span class="tag">第二期</span></div>
+  <div class="d">付款合同列表（列冻结 / 三类操作 / 名称旁「⋯」快捷入口）、创建编辑（多板块字段与联动、电子签国内·海外、盖章位置设置）、盖章审批（moneta 审批 → 集团盖章）、用户 / 团队 / 数据范围 / 单合同授权、审计日志、状态沙盒。<br>右上角可切换角色，观察功能权限与数据范围的组合效果。</div>
+</a>
+
+<div class="card" style="cursor:default">
+  <div class="t">计提<span class="tag" style="background:#f0f2f5;color:#909399">第一期 · 已上线</span></div>
+  <div class="d">原型见此前独立地址，后续统一迁入本仓库。</div>
+</div>
+
+<div class="foot">
+  品牌资产：<a href="brand/moneta-icon-full.svg">图标</a> ·
+  <a href="brand/moneta-lockup-dark.svg">横版字标</a> ·
+  <a href="brand/favicon.ico">favicon.ico</a><br>
+  仅交互原型，数据为 mock；需求以飞书 PRD 为准。
+</div>
+</div></body></html>

@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moneta 付款合同 · 第二期 Demo</title>
+<link rel="icon" href="../brand/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="../brand/moneta-icon-simple.svg">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#303133;font-size:13px}
+.layout{display:flex;min-height:100vh}
+/* 侧边栏 */
+.sidebar{width:210px;flex-shrink:0;background:#1e2a3a;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;z-index:10}
+.logo{padding:18px 16px;color:#fff;font-size:15px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo sub{font-size:10px;opacity:.5;font-weight:normal;display:block;margin-top:2px}
+.nav-group-title{padding:16px 20px 6px;font-size:11px;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase}
+.nav-item{padding:11px 20px;color:rgba(255,255,255,.55);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .15s,color .15s;border-left:3px solid transparent;user-select:none}
+.nav-item.active{background:#3981ff22;color:#fff;border-left-color:#3981ff}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+/* 主区 */
+.main{margin-left:210px;padding:22px 26px;flex:1;min-width:0}
+.page{display:none}.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.header-left{display:flex;align-items:baseline;gap:12px}
+.page-title{font-size:20px;font-weight:700;color:#1a1a2e}
+.page-sub{font-size:12px;color:#909399}
+/* 角色切换 */
+.role-switch{display:flex;align-items:center;gap:8px}
+.role-switch label{font-size:12px;color:#909399}
+.role-switch select{padding:6px 12px;border:1px solid #dcdfe6;border-radius:5px;font-size:13px;color:#303133;background:#fff;cursor:pointer}
+/* 按钮 */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 15px;border-radius:5px;font-size:13px;cursor:pointer;transition:all .15s;user-select:none;border:none}
+.btn-primary{background:#3981ff;color:#fff}.btn-primary:hover{background:#2f6fe0}
+.btn-outline{border:1px solid #3981ff;color:#3981ff;background:#fff}.btn-outline:hover{background:#e8f1ff}
+.btn-ghost{border:1px solid #dcdfe6;color:#606266;background:#fff}.btn-ghost:hover{background:#f5f7fa}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+/* 卡片/面板 */
+.panel{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:16px}
+.panel-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+/* 筛选条 */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.filter-item{display:flex;flex-direction:column;gap:4px}
+.filter-item label{font-size:11px;color:#909399}
+.filter-item input,.filter-item select{padding:6px 10px;border:1px solid #dcdfe6;border-radius:5px;font-size:12px;min-width:130px;background:#fff}
+/* 表格 */
+table.grid{width:100%;border-collapse:collapse;font-size:12.5px}
+table.grid th{background:#f7f8fa;padding:9px 10px;text-align:left;font-weight:600;color:#606266;border-bottom:1px solid #ebeef5;white-space:nowrap}
+table.grid td{padding:9px 10px;border-bottom:1px solid #f2f3f5;vertical-align:middle;white-space:nowrap}
+table.grid tr:hover td{background:#f7f9ff}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.t-blue{background:#e8f1ff;color:#3981ff}.t-green{background:#e6fff0;color:#16a34a}.t-orange{background:#fff5e6;color:#e6a23c}
+.t-red{background:#fff0f0;color:#f44336}.t-grey{background:#f0f2f5;color:#909399}.t-purple{background:#f5e8ff;color:#9c27b0}
+.row-actions a{color:#3981ff;cursor:pointer;margin-right:8px;font-size:12px}
+.row-actions a.disabled{color:#c0c4cc;cursor:not-allowed}
+/* 表单 */
+.form-section{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:14px;overflow:hidden}
+.form-section-head{padding:12px 18px;background:#fafbfc;border-bottom:1px solid #eef0f3;font-weight:700;font-size:14px;color:#1a1a2e;display:flex;align-items:center;gap:8px}
+.form-section-head .idx{width:20px;height:20px;border-radius:50%;background:#3981ff;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center}
+.form-grid{padding:16px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 18px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.hidden{display:none}
+.fld label{font-size:12px;color:#606266}
+.fld label .req{color:#f44336;margin-right:2px}
+.fld label .who{color:#e6a23c;font-size:10px;margin-left:4px}
+.fld input,.fld select,.fld textarea{padding:7px 10px;border:1px solid #dcdfe6;border-radius:5px;font-size:12.5px;background:#fff;width:100%}
+.fld textarea{resize:vertical;min-height:56px}
+.fld .hint{font-size:10px;color:#c0c4cc}
+.checkbox-inline{display:flex;align-items:center;gap:6px;font-size:12.5px}
+.multi{display:flex;gap:14px;align-items:center;padding-top:6px}
+.multi label{display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer}
+.form-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 0 30px}
+/* 盖章状态机 */
+.machine{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:10px 0 4px}
+.mnode{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;border:2px solid #dcdfe6;color:#909399;background:#fff;position:relative}
+.mnode.done{border-color:#16a34a;color:#16a34a;background:#e6fff0}
+.mnode.active{border-color:#3981ff;color:#3981ff;background:#e8f1ff;box-shadow:0 0 0 3px #3981ff22}
+.march{color:#c0c4cc;margin:0 8px;font-size:16px}
+/* 弹窗 */
+.mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.mask.show{display:flex}
+.modal{background:#fff;border-radius:12px;width:560px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.modal-head{padding:16px 20px;border-bottom:1px solid #eef0f3;font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.modal-head .x{cursor:pointer;color:#909399;font-size:18px}
+.modal-body{padding:18px 20px}
+.modal-foot{padding:14px 20px;border-top:1px solid #eef0f3;display:flex;justify-content:flex-end;gap:10px}
+/* 团队树 */
+.tree{list-style:none;font-size:13px}
+.tree li{margin:2px 0}
+.tree .node{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer}
+.tree .node:hover{background:#f5f7fa}
+.tree .node.sel{background:#e8f1ff}
+.tree .toggle{width:14px;color:#909399;cursor:pointer;user-select:none}
+.tree .tname{font-weight:600}
+.tree .tmeta{font-size:11px;color:#909399}
+.tree ul{list-style:none;margin-left:18px;border-left:1px dashed #dcdfe6;padding-left:6px}
+.badge{display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600;background:#e8f1ff;color:#3981ff}
+.two-col{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f2f3f5;font-size:12.5px}
+.kv .k{color:#909399}
+.scope-opt{display:flex;gap:10px;margin:8px 0}
+.scope-card{flex:1;border:2px solid #dcdfe6;border-radius:8px;padding:10px 12px;cursor:pointer;transition:all .15s}
+.scope-card.on{border-color:#3981ff;background:#e8f1ff}
+.scope-card .t{font-weight:700;font-size:13px}
+.scope-card .d{font-size:11px;color:#909399;margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:14px;background:#f0f2f5;font-size:11.5px;margin:3px 4px 3px 0}
+.chip .rm{cursor:pointer;color:#909399}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(30,42,58,.9);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;z-index:200}
+/* 合同列表：左侧(合同ID/合同名称)与右侧(操作)冻结，中间横向滚动 */
+.tbl-scroll{overflow-x:auto;position:relative}
+table.grid th.fz,table.grid td.fz{position:sticky;z-index:3;background:#fff}
+table.grid thead th.fz{z-index:5;background:#f7f8fa}
+table.grid th.fz-l1,table.grid td.fz-l1{left:0;width:126px;min-width:126px}
+table.grid th.fz-l2,table.grid td.fz-l2{left:126px;width:270px;min-width:270px;box-shadow:2px 0 0 0 #ebeef5}
+table.grid th.fz-r,table.grid td.fz-r{right:0;width:290px;min-width:290px;box-shadow:-2px 0 0 0 #ebeef5}
+table.grid tr:hover td.fz{background:#f7f9ff}
+/* 名称旁三点快捷入口 */
+.dots{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;color:#909399;cursor:pointer;font-size:15px;line-height:1;user-select:none;margin-left:4px}
+.dots:hover{background:#eef1f5;color:#3981ff}
+.dots.off{color:#dcdfe6;cursor:not-allowed}
+.qmenu{position:fixed;z-index:150;background:#fff;border:1px solid #e4e7ed;border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.14);padding:5px;min-width:210px}
+.qmenu .qhead{font-size:11px;color:#909399;padding:5px 10px 6px;border-bottom:1px solid #f2f3f5;margin-bottom:4px}
+.qmenu .qitem{padding:8px 10px;border-radius:5px;font-size:12.5px;color:#303133;cursor:pointer;display:flex;align-items:center;gap:8px}
+.qmenu .qitem:hover{background:#f5f7fa;color:#3981ff}
+.note{font-size:11px;color:#909399;background:#fafbfc;border:1px dashed #e0e3e8;border-radius:6px;padding:8px 12px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="logo" style="display:flex;align-items:center;gap:10px">
+      <svg width="34" height="34" viewBox="0 0 80 80" style="flex-shrink:0">
+        <rect x="8" y="8" width="64" height="64" rx="15" fill="#26344a"/>
+        <rect x="14" y="14" width="52" height="52" rx="10" fill="none" stroke="#C9A24B" stroke-width="1.6"/>
+        <text x="40" y="42" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="27" fill="#F3EEE3">M</text>
+        <line x1="29" y1="52" x2="51" y2="52" stroke="#C9A24B" stroke-width="2" stroke-linecap="round"/>
+        <line x1="32" y1="58" x2="48" y2="58" stroke="#C9A24B" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+        <circle cx="61" cy="19" r="5" fill="#C9A24B"/>
+      </svg>
+      <div style="line-height:1.1">Moneta<sub>付款合同 · 第二期 Demo</sub></div>
+    </div>
+    <div class="nav-group-title">合同</div>
+    <div class="nav-item active" id="nav-list" onclick="go('list')">📋 付款合同列表</div>
+    <div class="nav-item" id="nav-form" onclick="openForm()">📝 新建 / 编辑合同</div>
+    <div class="nav-item" id="nav-seal" onclick="go('seal')">🖋️ 盖章审批</div>
+    <div class="nav-group-title">权限管理</div>
+    <div class="nav-item" id="nav-user" onclick="go('user')">👤 用户管理</div>
+    <div class="nav-item" id="nav-team" onclick="go('team')">🏢 团队管理</div>
+    <div class="nav-item" id="nav-scope" onclick="go('scope')">🔐 数据范围与角色</div>
+    <div class="nav-item" id="nav-grant" onclick="go('grant')">🤝 单合同授权</div>
+    <div class="nav-group-title">体验</div>
+    <div class="nav-item" id="nav-sandbox" onclick="go('sandbox')">🧪 状态沙盒</div>
+    <div class="nav-group-title">内控</div>
+    <div class="nav-item" id="nav-audit" onclick="go('audit')">🛡️ 审计日志</div>
+  </div>
+
+  <div class="main">
+    <!-- 顶部角色切换：影响操作可见性 -->
+    <div class="page-header">
+      <div class="header-left">
+        <div class="page-title" id="pageTitle">付款合同列表</div>
+        <div class="page-sub" id="pageSub">可见范围随当前角色的数据范围变化</div>
+      </div>
+      <div class="role-switch">
+        <label>当前登录角色</label>
+        <select id="roleSel" onchange="onRoleChange()">
+          <option value="sales">销售（本人范围）</option>
+          <option value="salesLead">销售负责人（本团队）</option>
+          <option value="biz">商务（本人范围）</option>
+          <option value="bizLead">商务组长（本团队）</option>
+          <option value="saleAdmin">销管</option>
+          <option value="ops">运营（只读+导出）</option>
+          <option value="finance">财务（全量）</option>
+          <option value="superView">超级观看者（全量只读）</option>
+          <option value="superAdmin">超级管理者（全量全权）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ============ 列表页 ============ -->
+    <div class="page active" id="page-list">
+      <div class="panel">
+        <div class="filters">
+          <div class="filter-item"><label>合同ID</label><input placeholder="合同ID"></div>
+          <div class="filter-item"><label>合同名称</label><input placeholder="合同名称"></div>
+          <div class="filter-item"><label>合同编号</label><input placeholder="集团回传编号"></div>
+          <div class="filter-item"><label>一级业务线</label><select><option>全部</option><option>广告</option><option>增值</option><option>海外互联网电视</option></select></div>
+          <div class="filter-item"><label>二级业务线</label><select><option>全部</option><option>海外-广告DSP</option><option>海外-广告效果</option><option>海外游戏发行-广告</option><option>海外-增值业务</option><option>海外互联网电视</option></select></div>
+          <div class="filter-item"><label>合同签署阶段</label><select><option>全部</option><option>双方已签</option><option>我方先签</option><option>合同已归档</option><option>无合同</option></select></div>
+          <div class="filter-item"><label>moneta 审批状态</label><select><option>全部</option><option>草稿</option><option>审核中</option><option>已通过</option><option>已驳回</option><option>已作废</option></select></div>
+          <div class="filter-item"><label>盖章审批状态</label><select><option>全部</option><option>未提交</option><option>审批中</option><option>已盖章</option><option>已归档</option><option>已撤销</option></select></div>
+          <div class="filter-item"><button class="btn btn-primary btn-sm">🔍 查询</button></div>
+          <div class="filter-item"><button class="btn btn-ghost btn-sm">重置</button></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">付款合同
+          <span style="font-size:12px;color:#909399;font-weight:400" id="listScopeTip"></span>
+          <span style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="btnNew" onclick="openForm()">+ 新建合同</button>
+            <button class="btn btn-outline btn-sm" onclick="toast('演示：异步导出（后台生成，完成后下载）；附件名=合同ID-附件名称-数字')">↓ 异步导出</button>
+          </span>
+        </div>
+        <div class="note">列表操作分三部分：① 行操作项（查看/编辑/复制/提交/提交集团盖章/终止盖章/作废/<b>暂停合作·恢复合作</b>/授权…）② <b>合同名称旁「⋯」快捷入口</b>（点击弹出菜单：合同编号 / DPA·NDA 编号 / 合同·DPA·NDA 签署阶段 / 回收附件，不进详情。需具备该权限点——demo 中请把右上角角色切到<b>销管</b>或<b>超级管理者</b>）③ 列表外统一操作（筛选/异步导出/批量/新建）。操作是否可用取决于合同状态与功能权限点（可配置，不绑角色）。</div>
+        <div class="tbl-scroll">
+          <table class="grid">
+            <thead><tr>
+              <th class="fz fz-l1">合同ID</th><th class="fz fz-l2">合同名称</th><th>合同编号</th><th>合作类型</th><th>二级业务线</th>
+              <th>客户公司</th><th>我方主体</th><th>付款方式</th><th>签署阶段</th><th>合作状态</th><th>对接人</th><th>运营</th>
+              <th>moneta 审批状态</th><th>盖章审批状态</th><th>计提推送</th><th class="fz fz-r">操作</th>
+            </tr></thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 表单页（见第二段脚本注入结构，这里放容器）============ -->
+    <div class="page" id="page-form"></div>
+
+    <!-- ============ 盖章审批页 ============ -->
+    <div class="page" id="page-seal">
+      <div class="note">提交合同即进入 <b>moneta 审批</b>（moneta 内<b>唯一内部审批</b>，走小米审批流，状态：审批中/审批通过/审批驳回）；审批通过后由<b>发起盖章人</b>（谁能发起由权限点配置，不限角色）提交集团盖章，进入集团审批（含电子签），moneta 同步盖章审批状态、合同编号、电子签结果。</div>
+      <div class="panel">
+        <div class="panel-title">合同 PC-2026-0007 · Xiaomi × Acme 内容合作付款合同</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:12.5px;color:#606266">
+          <div><span style="color:#909399">合同审批状态：</span><span class="tag t-green">已通过</span></div>
+          <div><span style="color:#909399">盖章状态：</span><span class="tag t-orange" id="sealStatusTag">待moneta审批</span></div>
+          <div><span style="color:#909399">集团合同ID：</span><span id="miContractId">—</span></div>
+          <div><span style="color:#909399">合同编号：</span><span id="contractCode">—（盖章完成后回传）</span></div>
+          <div><span style="color:#909399">电子签：</span>海外 · DocuSign · 双方签</div>
+          <div><span style="color:#909399">合同签署阶段：</span>
+            <select id="signStage" onchange="renderSealButtons()" style="padding:3px 8px;border:1px solid #dcdfe6;border-radius:4px;font-size:12px">
+              <option value="ourSignFirst">双方未签，我方先签</option>
+              <option value="customerSignFirst">双方未签，客户先签</option>
+              <option value="customerNoOurSign">客户未签，我方已签</option>
+              <option value="customerSignOurNo">客户已签，我方未签</option>
+              <option value="bothSign">双方已签</option>
+              <option value="archived">合同已归档</option>
+              <option value="emailConfirmed">邮件已确认</option>
+              <option value="noContract">无合同</option>
+            </select>
+            <span id="signModeTip" style="font-size:11px;color:#909399;margin-left:6px"></span>
+          </div>
+        </div>
+        <div class="machine" id="sealMachine"></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" id="btnSaleApprove" onclick="saleApprove()">moneta 审批通过</button>
+          <button class="btn btn-primary btn-sm" id="btnSubmitSeal" onclick="openSealModal()">提交集团盖章</button>
+          <button class="btn btn-outline btn-sm" id="btnRevokeSeal" onclick="revokeSeal()">终止盖章</button>
+        </div>
+        <div style="margin-top:6px;font-size:11px;color:#c0c4cc" id="sealPrereq"></div>
+        <div style="margin-top:8px;font-size:11.5px;color:#909399">主流程：moneta 审批通过 → 提交集团盖章（填写审批人/抄送人/签署说明/附件）→ 操作变为「终止盖章」。集团侧状态由回调同步，不在本页人工推进；如需体验完整状态流转与字段变化，见左侧「🧪 状态沙盒」。</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">盖章操作记录</div>
+        <table class="grid"><thead><tr><th>时间</th><th>操作</th><th>操作人</th><th>盖章状态</th><th>说明</th></tr></thead>
+        <tbody id="sealLog"><tr><td colspan="5" style="color:#c0c4cc;text-align:center">暂无记录</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- ============ 团队管理页 ============ -->
+    <div class="page" id="page-team">
+      <div class="note">团队为 moneta 一等实体：支持<b>任意层级树</b>、条线类型、负责人、关联业务线。换团队 = 关闭旧归属 + 新增归属，不改动其他人数据。</div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-title">团队树 <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="toast('演示：新增团队')">+ 新增团队</button></div>
+          <ul class="tree" id="teamTree"></ul>
+        </div>
+        <div class="panel">
+          <div class="panel-title" id="teamDetailTitle">团队详情</div>
+          <div id="teamDetail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 数据范围与角色页 ============ -->
+    <div class="page" id="page-scope">
+      <div class="note">权限=<b>可配置</b>：角色 = 一组<b>功能权限点</b>（读/写）+ 一组<b>数据权限规则</b>。数据范围由可<b>叠加规则</b>组成：<b>本人 / 团队子树 / 业务线 / 全量</b>，取并集 ∪ 单合同授权。审批不做角色权限，交<b>小米审批流</b>。下表仅为<b>参考配置示例</b>，实际可自定义（可新建任意角色）。</div>
+      <div class="panel">
+        <div class="panel-title">参考角色配置示例（角色与权限均可配置）</div>
+        <div style="overflow-x:auto">
+          <table class="grid">
+            <thead><tr><th>角色</th><th>创建/编辑</th><th>提交/撤销审批</th><th>提交/撤销盖章</th><th>作废</th><th>导出</th><th>默认数据范围</th></tr></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">数据范围配置（示例用户：吴浩 · 商务组长）</div>
+        <div style="font-size:12.5px;color:#606266;margin-bottom:6px">组织维度</div>
+        <div class="scope-opt" id="scopeOrg">
+          <div class="scope-card" data-v="self"><div class="t">本人</div><div class="d">仅自己创建/归属的合同</div></div>
+          <div class="scope-card on" data-v="team"><div class="t">本团队</div><div class="d">本团队及所有下级团队成员的合同（递归下钻）</div></div>
+          <div class="scope-card" data-v="all"><div class="t">全量</div><div class="d">不做行级过滤</div></div>
+        </div>
+        <div style="font-size:12.5px;color:#606266;margin:14px 0 6px">业务线维度（∩）<span style="color:#c0c4cc">— 默认取团队业务线，可用户级覆盖</span></div>
+        <div id="scopeBiz"></div>
+        <div class="note" style="margin-top:12px">横向角色示例：<b>财务BP-广告</b> = 规则 {业务线∈广告} 全量；<b>财务BP-预装</b> = 规则 {业务线∈预装}——两人数据天然隔离，与是否同一绩效团队无关。销售/商务组长 = {团队子树}（可叠加业务线收窄）。</div>
+        <div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="toast('演示：已保存数据范围规则')">保存</button></div>
+      </div>
+    </div>
+
+    <!-- ============ 单合同授权页 ============ -->
+    <div class="page" id="page-grant">
+      <div class="note">合同负责人可把<b>单条</b>合同授权给他人，仅对该合同生效。两档：<b>只读</b> / <b>协作</b>。协作可做的操作 = <b>被授权人自身角色</b>的功能权限点 ∩ 该合同（不继承授权人权限）。入口在合同操作列，仅限本人名下合同，销管无此权；授权/撤销<b>记入该合同操作记录</b>用于审计。</div>
+      <div class="panel">
+        <div class="panel-title">合同 PC-2026-0007 的授权列表
+          <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openGrantModal()">+ 添加授权</button>
+        </div>
+        <table class="grid"><thead><tr><th>被授权人</th><th>授权级别</th><th>授权人</th><th>授权时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="grantBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============ 用户管理页 ============ -->
+    <div class="page" id="page-user">
+      <div class="note">用户 = <b>角色（功能权限点，可配置）</b> + <b>数据权限规则（本人/团队子树/业务线/全量，可叠加）</b>。<b>米盾登录，校验小米邮箱</b>，用户以小米邮箱为唯一标识，需先在 moneta 建档。禁用前若有在途审批/合同需先转移。</div>
+      <div class="panel">
+        <div class="panel-title">用户列表 <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openUserModal()">+ 新建用户</button></div>
+        <table class="grid"><thead><tr><th>姓名</th><th>邮箱</th><th>角色（功能）</th><th>团队归属（数据范围）</th><th>是否负责人</th><th>业务线</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="userBody"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="panel-title">🔔 离职报警规则</div>
+        <table class="grid"><thead><tr><th>离职角色</th><th>通知对象</th><th>处置动作</th></tr></thead><tbody>
+          <tr><td>销售/商务</td><td>直属上级(+1) + 超级管理者</td><td>提醒转移名下合同（对接人/业绩）与在途授权</td></tr>
+          <tr><td>销管</td><td>直属上级(+1) + 超级管理者</td><td>指派新销管，避免盖章审批/提交阻塞</td></tr>
+          <tr><td>运营</td><td>合同计提人 + 超级管理者</td><td>计提审批人回退至合同内运营字段第一位有权限的人</td></tr>
+          <tr><td>财务/资金/法务等<b>无上级角色</b></td><td><b>直接通知超级管理者</b></td><td>指派接替人</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+
+
+    <!-- ============ 状态沙盒 ============ -->
+    <div class="page" id="page-sandbox">
+      <div class="note">独立体验区：自由推进合同的各类状态，观察<b>列表字段如何联动变化</b>（合同编号、集团合同ID、moneta 审批状态、盖章审批状态、签署阶段、合作状态、合同回收时间、计提推送）。不影响主流程页面。</div>
+      <div class="panel">
+        <div class="panel-title">当前状态
+          <span style="margin-left:auto"><button class="btn btn-ghost btn-sm" onclick="sbAct('reset')">↺ 重置沙盒</button></span>
+        </div>
+        <div class="machine" id="sbMachine"></div>
+        <div style="margin-top:14px;font-weight:600;font-size:13px;margin-bottom:6px">可执行操作（灰色=当前状态不可用）</div>
+        <div id="sbBtns" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">字段实时值</div>
+        <div id="sbFields" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">列表行预览（同合同列表口径）</div>
+        <div class="tbl-scroll">
+          <table class="grid"><thead><tr>
+            <th>合同ID</th><th>合同编号</th><th>集团合同ID</th><th>签署阶段</th><th>合作状态</th>
+            <th>moneta 审批状态</th><th>盖章审批状态</th><th>合同回收时间</th><th>计提推送</th>
+          </tr></thead><tbody id="sbRow"></tbody></table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">操作记录</div>
+        <table class="grid"><thead><tr><th>时间</th><th>操作</th><th>字段变化</th></tr></thead><tbody id="sbLog"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ============ 审计日志页 ============ -->
+    <div class="page" id="page-audit">
+      <div class="note">独立、只追加、不可篡改的审计日志。<b>仅记录超级管理者等高权限"操作"</b>（超级观看者无操作权限、不记录）。合同级操作记录挂在各合同上，不在此。数据范围过滤对导出同样生效。</div>
+      <div class="panel">
+        <div class="panel-title">审计日志
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <label style="font-size:12px;color:#909399;display:flex;align-items:center;gap:5px"><input type="checkbox" id="auditPriv" onchange="renderAudit()"> 仅看高权限操作</label>
+            <button class="btn btn-outline btn-sm" onclick="toast('演示：导出审计日志')">↓ 导出</button>
+          </span>
+        </div>
+        <table class="grid"><thead><tr><th>时间</th><th>操作人</th><th>角色</th><th>操作</th><th>对象</th><th>前值→后值</th><th>来源IP</th><th>高权限</th></tr></thead>
+          <tbody id="auditBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="mask" id="mask"></div>
+<div class="toast" id="toast"></div>
+<script>
+/* ============ 通用 ============ */
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.opacity='1';el.style.transform='translateX(-50%) translateY(0)';clearTimeout(window._t);window._t=setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(-50%) translateY(20px)'},1600)}
+const TITLES={list:['付款合同列表','可见范围随当前角色的数据范围变化'],form:['新建 / 编辑合同','9 大板块 · 字段联动展示'],seal:['盖章审批','moneta 审批 + 集团盖章两阶段'],team:['团队管理','团队树 + 成员归属'],scope:['数据范围与角色','组织维度 ∩ 业务线维度'],grant:['单合同授权','只读 / 协作，仅对该合同生效'],user:['用户管理','角色(功能) + 团队(数据范围) 正交'],audit:['审计日志','高权限操作独立留痕'],sandbox:['状态沙盒','自由推进状态 · 观察字段联动变化']};
+function go(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  const nav=document.getElementById('nav-'+p); if(nav)nav.classList.add('active');
+  document.getElementById('pageTitle').textContent=TITLES[p][0];
+  document.getElementById('pageSub').textContent=TITLES[p][1];
+  if(p==='seal')renderMachine();
+  if(p==='user')renderUser();
+  if(p==='audit')renderAudit();
+  if(p==='sandbox')renderSandbox();
+}
+
+/* ============ 角色能力矩阵 ============ */
+const ROLES={
+  sales:{name:'销售',scope:'本人',create:1,approve:1,seal:0,void:1,export:1,grant:1},
+  salesLead:{name:'销售负责人',scope:'本团队',create:1,approve:1,seal:0,void:1,export:1,grant:1},
+  biz:{name:'商务',scope:'本人',create:1,approve:1,seal:0,void:1,export:1,grant:1},
+  bizLead:{name:'商务组长',scope:'本团队',create:1,approve:1,seal:0,void:1,export:1,grant:1},
+  saleAdmin:{name:'销管',scope:'依配置',create:0,approve:0,seal:1,void:1,export:1,grant:0,quick:1},
+  ops:{name:'运营',scope:'本人/本团队',create:0,approve:0,seal:0,void:0,export:1,grant:0},
+  finance:{name:'财务',scope:'全量',create:0,approve:0,seal:0,void:0,export:1,grant:0},
+  superView:{name:'超级观看者',scope:'全量(只读)',create:0,approve:0,seal:0,void:0,export:1,grant:0},
+  superAdmin:{name:'超级管理者',scope:'全量',create:1,approve:1,seal:1,void:1,export:1,grant:1,quick:1},
+};
+function curRole(){return ROLES[document.getElementById('roleSel').value]}
+function onRoleChange(){renderList();renderSealButtons();document.getElementById('listScopeTip').textContent='｜当前角色：'+curRole().name+'（数据范围：'+curRole().scope+'）';renderMachine()}
+
+/* ============ 列表 ============ */
+const CONTRACTS=[
+  {id:'PC-2026-0007',name:'Xiaomi × Acme 内容合作付款合同',code:'—',coop:'内容合作',biz:'海外互联网电视',cust:'Acme Media Ltd',ours:'Xiaomi H.K.',pay:'后付',stage:'我方先签',owner:'吴浩',ops:'李静',appr:'已通过',seal:'未提交',push:'待推送',mine:1,coopStatus:'正常合作'},
+  {id:'PC-2026-0006',name:'DSP 程序化采买框架合同',code:'MI-OA-20260812',coop:'广告投放',biz:'海外-广告DSP',cust:'AdColony Inc',ours:'Xiaomi SG',pay:'预付',stage:'双方已签',owner:'刘晓',ops:'王鹏',appr:'已通过',seal:'已盖章',push:'已推送',mine:0,coopStatus:'正常合作',pauseSoon:true,pauseDate:'2026-09-10'},
+  {id:'PC-2026-0005',name:'海外游戏发行广告代投合同',code:'—',coop:'广告投放',biz:'海外游戏发行-广告',cust:'GameHub Studio',ours:'Xiaomi H.K.',pay:'后付',stage:'审核中',owner:'吴浩',ops:'李静',appr:'审核中',seal:'未提交',push:'—',mine:1,coopStatus:'正常合作'},
+  {id:'PC-2026-0004',name:'增值业务主题内容采购',code:'MI-OA-20260731',coop:'内容合作',biz:'海外-增值业务',cust:'ThemeWorks',ours:'Xiaomi SG',pay:'后付',stage:'合同已归档',appr:'已通过',owner:'赵凯',ops:'孙磊',seal:'已归档',push:'已推送',mine:0,coopStatus:'暂停合作',resumeSoon:true,resumeDate:'2026-09-15'},
+  {id:'PC-2026-0003',name:'广告效果媒体流量采买',code:'—',coop:'广告投放',biz:'海外-广告效果',cust:'TrafficX',ours:'Xiaomi H.K.',pay:'后付',stage:'草稿',appr:'草稿',owner:'吴浩',ops:'李静',seal:'未提交',push:'—',mine:1,coopStatus:'正常合作'},
+];
+function tagCls(v){return {'已通过':'t-green','双方已签':'t-green','已盖章':'t-green','已推送':'t-green','审核中':'t-orange','我方先签':'t-orange','待推送':'t-orange','草稿':'t-grey','—':'t-grey','未提交':'t-grey','已归档':'t-blue','合同已归档':'t-blue','已驳回':'t-red','已作废':'t-red','已撤销':'t-red'}[v]||'t-grey'}
+function renderList(){
+  const r=curRole();const scope=r.scope;
+  let rows=CONTRACTS.slice();
+  // 简化的数据范围演示：本人只看 mine=1；本团队看全部演示数据；全量看全部
+  if(scope==='本人')rows=rows.filter(c=>c.mine===1);
+  const body=document.getElementById('listBody');
+  body.innerHTML=rows.map(c=>{
+    const canEdit=r.create;const canSeal=r.seal;const canVoid=r.void;
+    const a=[];
+    a.push(`<a onclick="openForm('${c.id}')">查看</a>`);
+    a.push(canEdit?`<a onclick="openForm('${c.id}')">编辑</a>`:`<a class="disabled">编辑</a>`);
+    a.push(canEdit?`<a onclick="toast('演示：复制合同为新草稿')">复制</a>`:`<a class="disabled">复制</a>`);
+    a.push(`<a onclick="go('seal')">盖章</a>`);
+    a.push(canVoid?`<a onclick="toast('演示：作废 cancelContract（审批中/待盖章/待归档，不限创建人）；已通过moneta审批的作废需再走审批')">作废</a>`:`<a class="disabled">作废</a>`);
+    a.push(canSeal?`<a onclick="toast('演示：终止盖章 stopContract（仅集团审批流程中·仅创建人）；moneta 侧不做内部审批，直接调用集团接口')">终止盖章</a>`:`<a class="disabled">终止盖章</a>`);
+    a.push(r.grant?`<a onclick="go('grant')">授权</a>`:`<a class="disabled">授权</a>`);
+    if(c.coopStatus==='暂停合作'){
+      a.push(canVoid?`<a onclick="toast('演示：恢复合作 — 选恢复生效时间(可未来)，生成新的正常合作区间；恢复后按计提规则继续计提')">恢复合作</a>`:`<a class="disabled">恢复合作</a>`);
+    }else{
+      a.push(canVoid?`<a onclick="toast('演示：暂停合作 — 选暂停生效时间(可未来)+原因，生成暂停区间；不影响历史计提，生效后按计提规则不再新增计提')">暂停合作</a>`:`<a class="disabled">暂停合作</a>`);
+    }
+    const canQuick = curRole().quick===1;
+    const nameIcon = '';
+    const quickEdit = canQuick
+      ? ` <span class="dots" title="快捷入口（不进详情，仅白名单字段）" onclick="openQuickMenu(event,'${c.id}')">⋯</span>`
+      : ` <span class="dots off" title="当前角色无快捷入口权限点">⋯</span>`;
+    return `<tr>
+      <td class="fz fz-l1">${c.id}</td><td class="fz fz-l2">${c.name}${nameIcon}${quickEdit}</td><td>${c.code}</td><td>${c.coop}</td><td>${c.biz}</td>
+      <td>${c.cust}</td><td>${c.ours}</td><td>${c.pay}</td>
+      <td><span class="tag ${tagCls(c.stage)}">${c.stage}</span></td>
+      <td><span class="tag ${c.coopStatus==='暂停合作'?'t-red':'t-green'}">${c.coopStatus||'正常合作'}</span>${c.pauseSoon?` <span title="即将暂停：${c.pauseDate} 生效" style="cursor:help">⏸️</span>`:''}${c.resumeSoon?` <span title="即将恢复：${c.resumeDate} 生效" style="cursor:help">▶️</span>`:''}</td>
+      <td>${c.owner}</td><td>${c.ops||'-'}</td>
+      <td><span class="tag ${tagCls(c.appr)}">${c.appr}</span></td>
+      <td><span class="tag ${tagCls(c.seal)}">${c.seal}</span></td>
+      <td><span class="tag ${tagCls(c.push)}">${c.push}</span></td>
+      <td class="fz fz-r row-actions">${a.join('')}</td></tr>`;
+  }).join('');
+  document.getElementById('btnNew').style.display=r.create?'inline-flex':'none';
+}
+
+/* ============ 表单（9 板块 + 联动）============ */
+function openForm(id){
+  go('form');
+  document.getElementById('page-form').innerHTML=FORM_HTML;
+  bindFormLinkage();
+  document.getElementById('pageTitle').textContent=id?('编辑合同 · '+id):'新建合同';
+  document.getElementById('pageSub').textContent='9 大板块 · 带 * 必填，条件字段随选择联动展示';
+}
+const FORM_HTML=`
+<div class="form-section"><div class="form-section-head"><span class="idx">1</span>业务线信息</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>二级业务线</label><select id="f_biz2" onchange="linkBiz()"><option value="">请选择</option><option>海外-广告DSP</option><option>海外-广告效果</option><option>海外游戏发行-广告</option><option>海外-增值业务</option><option value="tv">海外互联网电视</option></select></div>
+  <div class="fld"><label>一级业务线</label><input id="f_biz1" disabled placeholder="由二级自动映射"></div>
+  <div class="fld"><label><span class="req">*</span>是否启用外部媒体</label><select><option>否</option><option>是</option></select><div class="hint">保留字段，用途待运营确认</div></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">2</span>合同信息</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>合同名称</label><input maxlength="50" placeholder="合同名称（≤50字）"><div class="hint">传集团=【{年份}年付款单盖章申请】-{合同名称}，组合含前缀不超集团100字</div></div>
+  <div class="fld"><label><span class="req">*</span>合同形式</label><select id="f_form" onchange="linkForm()"><option value="online">线上</option><option value="offline">线下</option></select></div>
+  <div class="fld"><label><span class="req">*</span>合同分类</label><select id="f_cls" onchange="linkForm()"><option value="normal">正式合同</option><option value="supply">补充协议</option><option value="virtual">虚拟合同</option></select></div>
+  <div class="fld hidden" id="w_code"><label>合同编号<span class="who">快捷入口维护</span></label><input placeholder="集团OA回传/线下手填"></div>
+  <div class="fld hidden" id="w_related"><label><span class="req">*</span>关联原合同ID</label><input placeholder="搜索选择原合同"></div>
+  <div class="fld hidden" id="w_relatedCode"><label><span class="req">*</span>原合同编号</label><input disabled placeholder="自动拉取"></div>
+  <div class="fld"><label><span class="req">*</span>合同签署阶段状态</label><select><option>双方未签我方先签</option><option>双方未签客户先签</option><option>客户未签我方已签</option><option>客户已签我方未签</option><option>双方已签</option><option>邮件已确认</option><option>邮件确认计收</option><option>无合同</option></select><div class="hint">新建可选=除「合同已归档」外（归档由流程/审批后驱动）</div></div>
+  <div class="fld"><label><span class="req">*</span>合作类型</label><select id="f_coop" onchange="linkContent()"><option>广告投放</option><option value="content">内容合作</option><option>技术服务</option><option>游戏发行</option><option>游戏定制</option><option>游戏联运</option><option>代理服务</option></select></div>
+  <div class="fld hidden" id="w_content"><label><span class="req">*</span>内容形式</label><select><option>流媒体分发</option><option>OTT分发</option><option>FAST频道分发</option></select><div class="hint">仅 海外互联网电视 + 内容合作 展示</div></div>
+  <div class="fld"><label><span class="req">*</span>合同开始时间</label><input type="date"></div>
+  <div class="fld"><label><span id="rq_end" class="req">*</span>合同结束时间</label><input type="date" id="f_end"></div>
+  <div class="fld"><label>长期有效</label><div class="checkbox-inline"><input type="checkbox" id="f_long" onchange="linkLong()"> 勾选后结束时间可为空</div></div>
+  <div class="fld"><label><span class="req">*</span>续约方式</label><select id="f_renew" onchange="linkRenew()"><option value="re">重新谈判</option><option value="auto">自动续约</option></select></div>
+  <div class="fld hidden" id="w_renewDate"><label><span class="req">*</span>续约到期日</label><input type="date"></div>
+  <div class="fld"><label>合作状态</label><input value="正常合作" disabled><div class="hint">创建时默认正常合作；暂停/恢复通过列表「暂停合作 / 恢复合作」操作</div></div>
+  <div class="fld"><label><span class="req">*</span>是否需要DPA</label><select id="f_dpa" onchange="linkDpa()"><option value="no">否</option><option value="yes">是</option></select></div>
+  <div class="fld hidden" id="w_dpa"><label><span class="req">*</span>DPA签署阶段</label><select><option>双方已签</option><option>合同已归档</option><option>无合同</option></select><div class="hint">DPA编号由列表名称旁快捷入口维护</div></div>
+  <div class="fld"><label><span class="req">*</span>是否需要NDA</label><select id="f_nda" onchange="linkNda()"><option value="no">否</option><option value="yes">是</option></select></div>
+  <div class="fld hidden" id="w_nda"><label><span class="req">*</span>NDA签署阶段</label><select><option>双方已签</option><option>合同已归档</option><option>无合同</option></select></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">3</span>特殊条款</div><div class="form-grid" style="grid-template-columns:1fr">
+  <div class="fld"><label>特殊条款（1000字）</label><textarea placeholder="记录排他、审计等非标准条款"></textarea></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">4</span>结算信息</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>结算周期</label><select id="f_cycle" onchange="linkCycle()"><option>月结</option><option>季结</option><option>半年结</option><option>年结</option><option>一次性</option><option value="other">其他</option></select></div>
+  <div class="fld hidden" id="w_cycleOther"><label>其他说明（50字）</label><input maxlength="50" placeholder="≤50字"></div>
+  <div class="fld"><label><span class="req">*</span>付款方式</label><select id="f_pay" onchange="linkPay()"><option value="post">后付</option><option value="pre">预付</option></select><div class="hint">单选，枚举仅预付/后付</div></div>
+  <div class="fld" id="w_period"><label><span class="req">*</span>付款账期</label><div style="display:flex;align-items:center;gap:6px"><span style="font-size:12px;color:#909399">见票后</span><input style="width:80px" placeholder="数字"><span style="font-size:12px;color:#909399">天</span></div><div class="hint">见票后=对方开票后 N 天付款；工作日/自然日 TODO</div></div>
+  <div class="fld"><label><span class="req">*</span>结算币种</label><select><option>USD</option><option>INR</option><option>EUR</option><option>RUB</option><option>CNY</option><option>HKD</option><option>SGD</option></select></div>
+  <div class="fld"><label><span class="req">*</span>税率</label><select><option>0%</option><option>3%</option><option>6%</option><option>8%</option><option>9%</option></select></div>
+  <div class="fld"><label><span class="req">*</span>税款承担方</label><select><option>我方</option><option>对方</option><option>各自承担</option></select></div>
+  <div class="fld"><label>汇率来源</label><input placeholder="结算币种≠计价币种时必填"></div>
+  <div class="fld"><label><span class="req">*</span>结算模式（多选）</label><div class="multi"><label><input type="checkbox" id="sm_cps" checked onchange="linkCps()">收入分成(CPS)</label><label><input type="checkbox">固定费用</label><label><input type="checkbox">CPM</label><label><input type="checkbox">其他</label></div></div>
+  <div class="fld hidden cps"><label>分成基数</label><select><option>收入流水</option><option>净利润</option><option>按 Service Order</option></select></div>
+  <div class="fld hidden cps"><label><span class="req">*</span>分成比例-对方</label><input id="f_shareO" type="number" placeholder="%" oninput="calcShare()"></div>
+  <div class="fld hidden cps"><label><span class="req">*</span>分成比例-我方</label><input id="f_shareM" disabled placeholder="自动计算"></div>
+  <div class="fld hidden cps"><label>扣减上限</label><input placeholder="%"></div>
+  <div class="fld"><label><span class="req">*</span>归因方式</label><select><option>小米自归因</option><option>客户平台</option><option>三方平台</option></select></div>
+  <div class="fld"><label><span class="req">*</span>归因平台</label><input placeholder="归因平台"></div>
+  <div class="fld"><label><span class="req">*</span>是否有保底金额</label><select id="f_guar" onchange="linkGuar()"><option value="no">否</option><option value="yes">是</option></select></div>
+  <div class="fld hidden" id="w_guar"><label>保底金额</label><input type="number"></div>
+  <div class="fld"><label><span class="req">*</span>是否有保证金</label><select id="f_deposit" onchange="linkDeposit()"><option value="no">否</option><option value="yes">是</option></select></div>
+  <div class="fld hidden" id="w_deposit"><label><span class="req">*</span>保证金金额</label><input type="number"></div>
+  <div class="fld hidden" id="w_depositCur"><label>保证金币种</label><select><option>USD</option><option>EUR</option><option>CNY</option><option>SGD</option></select></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">5</span>签约信息</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>我方主体</label><select><option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option></select></div>
+  <div class="fld"><label>我方主体注册地</label><select disabled><option>新加坡</option><option>中国</option><option>印度</option><option>其他</option></select><div class="hint">由我方主体自动匹配，影响适用法律与税务</div></div>
+  <div class="fld"><label><span class="req">*</span>我方主体地址（到门牌号）</label><input placeholder="财务要求·新增"></div>
+  <div class="fld"><label><span class="req">*</span>我方主体邮编</label><input placeholder="财务要求·新增"></div>
+  <div class="fld"><label><span class="req">*</span>客户集团名称</label><input></div>
+  <div class="fld"><label><span class="req">*</span>客户公司名称</label><input></div>
+  <div class="fld"><label><span class="req">*</span>客户注册地</label><input placeholder="国家/地区"></div>
+  <div class="fld"><label><span class="req">*</span>客户主体地址</label><input></div>
+  <div class="fld"><label><span class="req">*</span>客户主体邮编</label><input></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">6</span>盖章信息</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>合同类型（三级级联）</label><select><option>采购类 / 服务采购 / 服务采购</option><option>采购类 / 服务采购 / 技术服务</option><option>业务合作类 / 广告投放 / 广告投放</option></select><div class="hint">与集团完全一致：由 loadContractTypes 动态拉取，传各级 typeCode 逗号串（如 CCZLL,FWZL,ZCZL）</div></div>
+  <div class="fld"><label><span class="req">*</span>费用类型</label><select><option value="OTHER" selected>其他（OTHER，默认）</option><option value="SCFY">市场费用（SCFY）</option><option>售后</option><option>客服</option><option>零售费用</option><option>行政费用</option><option>新零售费用</option></select><div class="hint">与集团页面一致共 7 项；已知编码 OTHER/SCFY，其余待集团提供</div></div>
+  <div class="fld"><label><span class="req">*</span>合同的需求发出人</label><input placeholder="邮箱（建议取商务对接人）"><div class="hint">传集团 requirementProposer（邮箱前缀），与 createUserId（合同创建人）不同</div></div>
+  <div class="fld"><label><span class="req">*</span>合同份数</label><input type="number" value="2"></div>
+  <div class="fld"><label><span class="req">*</span>合同页数</label><input type="number"></div>
+  <div class="fld"><label><span class="req">*</span>是否使用小米模板</label><select><option>是</option><option>否</option></select></div>
+  <div class="fld"><label>是否电子签约</label><select id="f_esign" onchange="linkEsign()"><option value="no">否</option><option value="yes">是</option></select></div>
+  <div class="fld hidden esign"><label><span class="req">*</span>签约双方是否包含境内主体</label><select><option>否</option><option>是</option></select><div class="hint">国外及港澳台地区电子签不支持与对方境内主体进行电子签</div></div>
+  <div class="fld hidden esign" id="w_abroad"><label><span class="req">*</span>是否海外及港澳台地区签约</label><select id="f_abroad" onchange="linkAbroad()"><option value="no">否（国内签）</option><option value="yes">是（海外/港澳台）</option></select></div>
+  <div class="fld hidden esign" id="w_platform"><label><span class="req">*</span>签约平台</label><select><option>e签宝</option><option>法大大</option></select></div>
+  <div class="fld hidden esign" id="w_platformAbroad"><label><span class="req">*</span>海外签约平台</label><select><option>Adobe</option><option>DocuSign</option></select></div>
+  <div class="fld hidden esign"><label><span class="req">*</span>电子签约方</label><select id="f_parties" onchange="renderSignParties()"><option value="2">双方签</option><option value="3">三方签</option><option value="4">四方签</option></select><div class="hint">签署顺序按方数自动匹配 1..N</div></div>
+  <div class="fld hidden esign" style="grid-column:1/-1"><label><span class="req">*</span>电子签约信息（按方数逐行填写）</label>
+    <div class="tbl-scroll"><table class="grid" id="tblParties"><thead><tr>
+      <th>签署顺序</th><th>是否我方</th><th>公司名称</th><th>签署方式</th><th>印章类型</th><th>签署人邮箱</th><th>抄送人邮箱</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="hint">是否我方=是→公司名称取「签约信息-我方主体」；=否→取「客户公司名称」。抄送人多个用逗号分隔</div>
+  </div>
+  <div class="fld"><label><span class="req">*</span>签署有效期</label><input type="date" id="f_signValid"><div class="hint">默认当前日期+30天，可修改；传集团 signValidEndTime（秒级时间戳）。超期未签署完成则流程自动失效</div></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">7</span>合同相关人</div><div class="form-grid">
+  <div class="fld"><label><span class="req">*</span>销售/商务对接人</label><select><option>吴浩</option><option>刘晓</option></select><div class="hint">仅可选角色含销售/商务的人</div></div>
+  <div class="fld"><label><span class="req">*</span>运营对接人</label><select><option>李静</option><option>王鹏</option></select><div class="hint">仅可选角色含运营的人</div></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">8</span>签署说明附件</div><div class="form-grid" style="grid-template-columns:1fr">
+  <div class="fld"><label>签署说明附件</label><input type="file"></div>
+</div></div>
+
+<div class="form-section"><div class="form-section-head"><span class="idx">9</span>合同附件</div><div class="form-grid" style="grid-template-columns:1fr">
+  <div class="fld"><label><span class="req">*</span>合同附件列表（PDF：主协议/补充协议/服务订单等）</label>
+    <input type="file" onchange="addAttach(this)">
+    <div class="hint" style="color:#e6a23c">严禁上传非清洁版文件，因非清洁版文件出现批注或乱码等情况，将无法用印</div>
+    <table class="grid" style="margin-top:8px"><thead><tr>
+      <th>附件名称</th><th>盖章位置</th><th>最后上传时间</th><th>状态</th><th>操作</th>
+    </tr></thead><tbody id="tblAttach"></tbody></table>
+    <div class="hint">导出附件命名规则=合同ID-附件名称-数字</div></div>
+</div></div>
+
+<div class="form-foot">
+  <button class="btn btn-ghost" onclick="go('list')">取消</button>
+  <button class="btn btn-outline" onclick="toast('演示：已暂存草稿')">暂存</button>
+  <button class="btn btn-primary" onclick="toast('演示：已提交审批')">提交审批</button>
+</div>`;
+
+/* 表单联动 */
+const BIZMAP={'海外-广告DSP':'广告','海外-广告效果':'广告','海外游戏发行-广告':'广告','海外-增值业务':'增值','海外互联网电视':'海外互联网电视'};
+function linkBiz(){const v=document.getElementById('f_biz2').value;document.getElementById('f_biz1').value=BIZMAP[v]||'';linkContent()}
+function linkContent(){const tv=document.getElementById('f_biz2').value==='tv'||document.getElementById('f_biz2').value==='海外互联网电视';const content=document.getElementById('f_coop').value==='content';show('w_content',tv&&content)}
+function linkForm(){const offline=document.getElementById('f_form').value==='offline';show('w_code',offline);const cls=document.getElementById('f_cls').value;const sup=cls==='supply'||cls==='virtual';show('w_related',sup);show('w_relatedCode',sup)}
+function linkLong(){const long=document.getElementById('f_long').checked;document.getElementById('f_end').disabled=long;document.getElementById('rq_end').style.display=long?'none':'inline'}
+function linkRenew(){show('w_renewDate',document.getElementById('f_renew').value==='auto')}
+function linkPause(){/* 合作状态改由独立操作变更，表单不再直接编辑 */}
+function linkDpa(){show('w_dpa',document.getElementById('f_dpa').value==='yes')}
+function linkNda(){show('w_nda',document.getElementById('f_nda').value==='yes')}
+function linkCycle(){show('w_cycleOther',document.getElementById('f_cycle').value==='other')}
+function linkPay(){/* 单选付款方式，账期始终展示一个 */}
+function linkCps(){const el=document.getElementById('sm_cps');const cps=el?el.checked:true;document.querySelectorAll('.cps').forEach(e=>e.classList.toggle('hidden',!cps))}
+function calcShare(){const o=parseFloat(document.getElementById('f_shareO').value);if(!isNaN(o))document.getElementById('f_shareM').value=(100-o)+'%'}
+function linkGuar(){show('w_guar',document.getElementById('f_guar').value==='yes')}
+function linkDeposit(){const y=document.getElementById('f_deposit').value==='yes';show('w_deposit',y);show('w_depositCur',y)}
+function linkEsign(){const y=document.getElementById('f_esign').value==='yes';document.querySelectorAll('.esign').forEach(e=>e.classList.toggle('hidden',!y));if(y)linkAbroad();}
+function linkAbroad(){const ab=document.getElementById('f_abroad').value==='yes';show('w_platform',!ab);show('w_platformAbroad',ab)}
+function linkIsOurs(){const ours=document.getElementById('f_isours').value==='yes';show('w_ourCompany',ours);show('w_custCompany',!ours);['w_ourEmail','w_ourCc','w_otherEmail','w_otherCc'].forEach(x=>show(x,!ours))}
+function show(id,cond){const el=document.getElementById(id);if(el)el.classList.toggle('hidden',!cond)}
+function bindFormLinkage(){renderSignParties();renderAttach();
+  const sv=document.getElementById('f_signValid');
+  if(sv&&!sv.value){const d=new Date();d.setDate(d.getDate()+30);sv.value=d.toISOString().slice(0,10);}linkBiz();linkForm();linkRenew();linkPause();linkDpa();linkNda();linkCycle();linkPay();linkCps();linkGuar();linkDeposit();linkEsign();linkIsOurs()}
+
+/* ============ 盖章状态机（含 moneta 审批阶段）============ */
+const SEAL_STEPS=['待moneta审批','待提交盖章','已申请','集团审批中','已盖章','已归档'];
+let sealIdx=0, sealRevoked=false;
+function renderMachine(){
+  const box=document.getElementById('sealMachine');if(!box)return;
+  box.innerHTML=SEAL_STEPS.map((s,i)=>{
+    let cls='mnode';if(i<sealIdx)cls+=' done';if(i===sealIdx&&!sealRevoked)cls+=' active';
+    const tag=(i===0)?' 🅜':(i>=2?' 🅖':'');
+    return `<span class="${cls}" title="${i===0?'moneta 审批':(i>=2?'集团合同系统':'moneta')}">${s}${tag}</span>`+(i<SEAL_STEPS.length-1?'<span class="march">→</span>':'');
+  }).join('') + (sealRevoked?'<span class="march">→</span><span class="mnode active" style="border-color:#f44336;color:#f44336;background:#fff0f0">已撤销</span>':'');
+  document.getElementById('sealStatusTag').textContent=sealRevoked?'已撤销':SEAL_STEPS[sealIdx];
+  document.getElementById('sealStatusTag').className='tag '+tagCls(sealRevoked?'已撤销':(sealIdx>=4?'已盖章':sealIdx>=2?'审批中':'未提交'));
+  renderSealButtons();
+}
+/* 签署阶段 → signMode 映射（已确认）；4 种状态不可发起盖章 */
+const SIGN_MODE_MAP={ourSignFirst:'我方先签',customerSignFirst:'对方先签',customerNoOurSign:'我方先签',customerSignOurNo:'对方先签'};
+const NO_SEAL_STAGES={bothSign:'双方已签',archived:'合同已归档',emailConfirmed:'邮件已确认',noContract:'无合同'};
+function curStage(){const el=document.getElementById('signStage');return el?el.value:'ourSignFirst';}
+function stageAllowsSeal(){return !(curStage() in NO_SEAL_STAGES);}
+function renderSealButtons(){
+  const r=curRole();const isAdmin=r.seal===1;
+  const tip=document.getElementById('signModeTip');
+  if(tip){
+    tip.textContent = stageAllowsSeal()
+      ? '→ 传集团 signMode = '+SIGN_MODE_MAP[curStage()]
+      : '→ 不需要映射，当前签署状态无法发起盖章';
+    tip.style.color = stageAllowsSeal()?'#16a34a':'#f44336';
+  }
+  const ba=document.getElementById('btnSaleApprove'),bs=document.getElementById('btnSubmitSeal'),br=document.getElementById('btnRevokeSeal'),pre=document.getElementById('sealPrereq');
+  if(!bs)return;
+  const canApprove=isAdmin&&sealIdx===0&&!sealRevoked;           // 阶段一：moneta 审批
+  const canSubmit=isAdmin&&(sealIdx===1||sealRevoked)&&stageAllowsSeal(); // 阶段二：提交集团盖章（还需签署阶段允许）
+  const canRevoke=isAdmin&&!sealRevoked&&(sealIdx===2||sealIdx===3); // 已申请/审批中可撤销
+  ba.disabled=!canApprove;bs.disabled=!canSubmit;br.disabled=!canRevoke;
+  pre.textContent = isAdmin
+    ? '前置：'+(sealIdx===0?'待 moneta 审批 → 请先「moneta 审批通过」':'moneta 审批已通过 ✓')+'；签署阶段校验：'+(stageAllowsSeal()?'通过 ✓':'✗ 当前签署状态无法发起盖章')
+    : '当前角色（'+r.name+'）无盖章相关权限点（提交集团盖章/终止盖章由权限配置决定，不限角色）。';
+}
+let sealLog=[];
+function pushLog(op,status,desc){sealLog.unshift({t:new Date().toLocaleString('zh-CN'),op,who:curRole().name,status,desc});renderLog();addAudit(op,'合同 PC-2026-0007','','盖章状态='+status)}
+function renderLog(){const b=document.getElementById('sealLog');b.innerHTML=sealLog.length?sealLog.map(l=>`<tr><td>${l.t}</td><td>${l.op}</td><td>${l.who}</td><td><span class="tag ${tagCls(l.status)}">${l.status}</span></td><td>${l.desc}</td></tr>`).join(''):'<tr><td colspan="5" style="color:#c0c4cc;text-align:center">暂无记录</td></tr>'}
+function saleApprove(){
+  if(curRole().seal!==1){toast('当前角色无审批权限点');return}
+  sealIdx=1;renderMachine();pushLog('moneta 审批','待提交盖章','moneta 审批通过，进入待提交盖章');toast('moneta 审批通过');
+}
+function openSealModal(){
+  if(!stageAllowsSeal()){toast('当前签署状态无法发起盖章（'+NO_SEAL_STAGES[curStage()]+'）');return}
+  showModal('提交集团盖章 · saveContract',`
+    <div class="note">moneta 审批通过后由<b>发起盖章人</b>提交。moneta 组装 saveContract：默认 sourcePlatform=<b>新 moneta 专属来源</b>、categoryCode=39(互联网业务部)、cashPayment=payment；费用类型取创建时所选；<b>createUserId=该合同的原始创建人</b>（创建合同的人，非操作人/非发起盖章人）；signMode 由合同签署阶段映射（我方未签→对方先签；我方先签/我方已签→我方先签），当前为 <b>${SIGN_MODE_MAP[curStage()]}</b>。</div>
+    <div class="fld" style="margin-bottom:10px"><label>相关审批人（非必填）</label><input id="m_appr" placeholder="小米全员，逗号分隔"><div class="hint">系统会自动判定审批人，此处添加的为额外审批人 → deptApprover</div></div>
+    <div class="fld" style="margin-bottom:10px"><label>抄送人（processParam.ccUserList）</label><input id="m_cc" placeholder="如 wanghao"></div>
+    <div class="fld" style="margin-bottom:10px"><label>签署说明（signDesc，空则默认 default sign desc from iib-crm）</label><textarea id="m_desc"></textarea></div>
+    <div class="fld"><label>合同附件</label><input type="file"></div>`,
+    '发起盖章',()=>{
+      closeModal();sealIdx=2;sealRevoked=false;document.getElementById('miContractId').textContent='MI-'+Math.floor(Math.random()*900000+100000);
+      renderMachine();pushLog('提交盖章','已申请','调用 saveContract 成功，盖章状态置 SEAL_APPROVING');toast('已发起盖章，集团合同ID已回写');
+    });
+}
+function revokeSeal(){
+  if(curRole().seal!==1){toast('当前角色无终止盖章权限点');return}
+  sealRevoked=true;renderMachine();document.getElementById('contractCode').textContent='—（盖章完成后回传）';
+  pushLog('终止盖章','已终止','调用 stopContract 成功（仅创建人；moneta 不做内部审批，直接调集团）');toast('已终止盖章');
+}
+function mockCallback(){
+  if(sealRevoked){toast('已撤销，请重新提交盖章');return}
+  if(sealIdx<2){toast('请先完成销管审批并提交盖章');return}
+  if(sealIdx<4){sealIdx++;renderMachine();
+    if(sealIdx===3)pushLog('集团回调','审批中','集团合同系统审批中');
+    if(sealIdx===4){document.getElementById('contractCode').textContent='MI-OA-2026'+Math.floor(Math.random()*9000+1000);pushLog('集团回调','已盖章','盖章完成，回传合同编号 contractCode');}
+  }else if(sealIdx===4){sealIdx=5;renderMachine();pushLog('归档','已归档','签署阶段=已归档，捕获合同回收时间');}
+  else{toast('已归档，流程结束')}
+}
+
+/* ============ 弹窗 ============ */
+function showModal(title,body,okText,onOk){
+  document.getElementById('mask').classList.add('show');
+  document.getElementById('mask').innerHTML=`<div class="modal"><div class="modal-head">${title}<span class="x" onclick="closeModal()">×</span></div><div class="modal-body">${body}</div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" id="modalOk">${okText}</button></div></div>`;
+  document.getElementById('modalOk').onclick=onOk;
+}
+function closeModal(){document.getElementById('mask').classList.remove('show');document.getElementById('mask').innerHTML=''}
+
+/* ============ 团队树 ============ */
+const TEAMS={id:'t0',name:'IIB 商务中心',type:'商务',leader:'商务总经理·陈总',biz:['海外-广告DSP','海外-广告效果','海外游戏发行-广告','海外-增值业务','海外互联网电视'],members:2,children:[
+  {id:'t1',name:'商务一组',type:'商务',leader:'吴浩（组长）',biz:['海外-广告DSP','海外-广告效果'],members:4,children:[
+    {id:'t11',name:'DSP 小组',type:'商务',leader:'刘晓',biz:['海外-广告DSP'],members:3,children:[]}
+  ]},
+  {id:'t2',name:'商务二组',type:'商务',leader:'赵凯（组长）',biz:['海外游戏发行-广告','海外-增值业务'],members:4,children:[]},
+  {id:'t3',name:'TV 业务组',type:'商务',leader:'孙磊',biz:['海外互联网电视'],members:3,children:[]},
+]};
+function renderTree(){
+  document.getElementById('teamTree').innerHTML=treeNode(TEAMS);
+  selTeam('t1');
+}
+function treeNode(n){
+  const kids=n.children&&n.children.length?`<ul>${n.children.map(treeNode).join('')}</ul>`:'';
+  const tog=n.children&&n.children.length?'▾':'•';
+  return `<li><div class="node" onclick="selTeam('${n.id}')" id="node-${n.id}"><span class="toggle">${tog}</span><span class="tname">${n.name}</span><span class="badge">${n.members}人</span><span class="tmeta">· ${n.leader}</span></div>${kids}</li>`;
+}
+function findTeam(n,id){if(n.id===id)return n;for(const c of(n.children||[])){const r=findTeam(c,id);if(r)return r}return null}
+function selTeam(id){
+  document.querySelectorAll('.tree .node').forEach(e=>e.classList.remove('sel'));
+  const nd=document.getElementById('node-'+id);if(nd)nd.classList.add('sel');
+  const t=findTeam(TEAMS,id);if(!t)return;
+  document.getElementById('teamDetailTitle').textContent='团队详情 · '+t.name;
+  document.getElementById('teamDetail').innerHTML=`
+    <div class="kv"><span class="k">条线类型</span><span>${t.type}</span></div>
+    <div class="kv"><span class="k">负责人</span><span>${t.leader}</span></div>
+    <div class="kv"><span class="k">成员数</span><span>${t.members} 人</span></div>
+    <div class="kv"><span class="k">关联业务线</span><span style="max-width:220px;text-align:right">${t.biz.map(b=>`<span class="chip">${b}</span>`).join('')}</span></div>
+    <div style="margin:14px 0 6px;font-weight:600;font-size:13px">成员归属（换团队 = 关旧开新）</div>
+    <table class="grid"><thead><tr><th>成员</th><th>是否负责人</th><th>归属类型</th><th>加入时间</th><th>操作</th></tr></thead>
+    <tbody>
+      <tr><td>吴浩</td><td><span class="tag t-blue">负责人</span></td><td>主归属</td><td>2025-03-01</td><td class="row-actions"><a onclick="toast('演示：调整归属')">换团队</a></td></tr>
+      <tr><td>刘晓</td><td>-</td><td>主归属</td><td>2025-06-15</td><td class="row-actions"><a onclick="toast('演示：调整归属')">换团队</a><a onclick="toast('演示：设为负责人')">设负责人</a></td></tr>
+      <tr><td>钱亮</td><td>-</td><td><span class="tag t-purple">虚线归属</span></td><td>2026-07-01</td><td class="row-actions"><a onclick="toast('演示：移除虚线')">移除</a></td></tr>
+    </tbody></table>
+    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="toast('演示：添加成员')">+ 添加成员</button><button class="btn btn-ghost btn-sm" onclick="toast('演示：新增子团队')">+ 新增子团队</button></div>`;
+}
+
+/* ============ 数据范围 ============ */
+const MATRIX=[
+  ['销售（普通）','✓','✓','✗','✓(名下)','✓','本人'],
+  ['销售负责人/区域负责人','✓','✓','✗','✓','✓','本团队'],
+  ['商务（普通）','✓','✓','✗','✓','✓','本人'],
+  ['商务组长/主管/总经理','✓','✓','✗','✓','✓','本团队'],
+  ['销管','✗','✗','✓','✓(需审批规则)','✓','依配置'],
+  ['运营/运营负责人','✗','✗','✗','✗','✓','本人/本团队'],
+  ['财务结算/财务BP','✗','✗','✗','✗','✓','全量'],
+  ['法务/作战室/资金','✗','✗','✗','✗','✓','全量'],
+  ['超级观看者','✗','✗','✗','✗','✓','全量(只读)'],
+  ['超级管理者','✓','✓(含通过/驳回)','✓','✓','✓','全量'],
+  ['IIB总经理','按需','按需(审批)','✗','✗','✓','全量(只读为主)'],
+];
+function renderMatrix(){
+  document.getElementById('matrixBody').innerHTML=MATRIX.map(r=>`<tr><td style="font-weight:600">${r[0]}</td>${r.slice(1,6).map(c=>`<td style="text-align:center;color:${c.startsWith('✓')?'#16a34a':c==='✗'?'#c0c4cc':'#e6a23c'}">${c}</td>`).join('')}<td><span class="tag t-blue">${r[6]}</span></td></tr>`).join('');
+  // 组织维度点选
+  document.querySelectorAll('#scopeOrg .scope-card').forEach(c=>c.onclick=()=>{document.querySelectorAll('#scopeOrg .scope-card').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
+  // 业务线维度 chips
+  const all=['海外-广告DSP','海外-广告效果'];
+  document.getElementById('scopeBiz').innerHTML=all.map(b=>`<span class="chip">${b}<span class="rm" onclick="this.parentNode.remove()">×</span></span>`).join('')+`<span class="chip" style="background:#e8f1ff;color:#3981ff;cursor:pointer" onclick="toast('演示：添加业务线（默认取团队业务线）')">+ 添加</span>`;
+}
+
+/* ============ 单合同授权 ============ */
+let GRANTS=[{who:'刘晓',level:'协作',by:'吴浩',t:'2026-08-20 10:12',status:'生效中'},{who:'林静',level:'只读',by:'吴浩',t:'2026-08-22 15:40',status:'生效中'}];
+function renderGrant(){
+  document.getElementById('grantBody').innerHTML=GRANTS.map((g,i)=>`<tr><td>${g.who}</td><td><span class="tag ${g.level==='协作'?'t-blue':'t-grey'}">${g.level}</span></td><td>${g.by}</td><td>${g.t}</td><td><span class="tag t-green">${g.status}</span></td><td class="row-actions"><a onclick="revokeGrant(${i})">撤销授权</a></td></tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#c0c4cc">暂无授权</td></tr>';
+}
+function revokeGrant(i){GRANTS.splice(i,1);renderGrant();toast('已撤销授权')}
+function openGrantModal(){
+  showModal('添加单合同授权',`
+    <div class="note">仅对该合同生效，不改变被授权人全局角色。协作 = 被授权人自身角色的功能权限点 ∩ 该合同（不继承授权人权限）；只读 = 仅查看。</div>
+    <div class="fld" style="margin-bottom:10px"><label>被授权人</label><input id="g_who" placeholder="搜索姓名/邮箱"></div>
+    <div class="fld"><label>授权级别</label><select id="g_level"><option value="协作">协作（在该合同上可做的操作 = 被授权人自身角色的功能权限点 ∩ 该合同）</option><option value="只读">只读（仅查看）</option></select></div>`,
+    '确认授权',()=>{
+      const who=document.getElementById('g_who').value||'新成员';const level=document.getElementById('g_level').value;
+      GRANTS.unshift({who,level,by:curRole().name,t:new Date().toLocaleString('zh-CN'),status:'生效中'});renderGrant();closeModal();toast('已添加授权');
+    });
+}
+
+/* ============ 用户管理 ============ */
+const USERS=[
+  {name:'吴浩',email:'wuhao',role:'商务组长',team:'商务一组',lead:1,biz:['海外-广告DSP','海外-广告效果'],scope:'本团队',on:1},
+  {name:'刘晓',email:'liuxiao',role:'商务',team:'DSP 小组',lead:0,biz:['海外-广告DSP'],scope:'本人',on:1},
+  {name:'李静',email:'lijing',role:'运营',team:'运营一组',lead:0,biz:['海外互联网电视'],scope:'本人',on:1},
+  {name:'张淇宁',email:'zhangqn',role:'销管',team:'—',lead:0,biz:['(不限)'],scope:'依配置',on:1},
+  {name:'陈总',email:'chenz',role:'商务总经理',team:'IIB 商务中心',lead:1,biz:['(全部)'],scope:'本团队',on:1},
+  {name:'林静',email:'linjing',role:'商务实习生',team:'商务二组',lead:0,biz:['海外游戏发行-广告'],scope:'本人',on:0},
+];
+function renderUser(){
+  document.getElementById('userBody').innerHTML=USERS.map(u=>`<tr>
+    <td>${u.name}</td><td>${u.email}@xiaomi.com</td>
+    <td><span class="tag t-blue">${u.role}</span></td>
+    <td>${u.team} <span class="tag ${u.scope==='全量'?'t-green':u.scope==='本团队'?'t-orange':'t-grey'}">${u.scope}</span></td>
+    <td>${u.lead?'<span class="tag t-purple">负责人</span>':'-'}</td>
+    <td style="max-width:180px;white-space:normal">${u.biz.map(b=>`<span class="chip">${b}</span>`).join('')}</td>
+    <td>${u.on?'<span class="tag t-green">启用</span>':'<span class="tag t-red">禁用</span>'}</td>
+    <td class="row-actions"><a onclick="toast('演示：编辑用户/换团队')">编辑</a><a onclick="toast('演示：${u.on?'禁用需先转移在途合同/审批':'启用'}')">${u.on?'禁用':'启用'}</a></td>
+  </tr>`).join('');
+}
+function openUserModal(){
+  showModal('新建用户',`
+    <div class="note">角色（功能权限）与团队（数据范围）独立分配。团队归属决定「本人/本团队」可见范围。</div>
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;padding:0;gap:12px">
+      <div class="fld"><label><span class="req">*</span>姓名</label><input placeholder="姓名"></div>
+      <div class="fld"><label><span class="req">*</span>企业邮箱</label><input placeholder="xxx@xiaomi.com"></div>
+      <div class="fld"><label><span class="req">*</span>角色（功能权限）</label><select><option>销售</option><option>销售负责人</option><option>商务</option><option>商务组长</option><option>销管</option><option>运营</option><option>财务</option><option>超级观看者</option><option>超级管理者</option></select></div>
+      <div class="fld"><label><span class="req">*</span>团队归属（数据范围）</label><select><option>商务一组</option><option>DSP 小组</option><option>商务二组</option><option>TV 业务组</option><option>运营一组</option></select></div>
+      <div class="fld"><label>是否负责人</label><select><option>否</option><option>是</option></select></div>
+      <div class="fld"><label>归属类型</label><select><option>主归属</option><option>虚线归属</option></select></div>
+      <div class="fld"><label>业务线覆盖（选填，默认继承团队）</label><input placeholder="留空=继承团队业务线"></div>
+    </div>`,
+    '创建并绑定',()=>{closeModal();toast('演示：已创建用户，待其米盾登录（小米邮箱）');addAudit('新建用户','用户·新成员','','角色+数据权限规则')});
+}
+
+/* ============ 审计日志 ============ */
+const AUDIT=[
+  {t:'2026-08-24 20:31:02',who:'张淇宁',role:'销管',act:'提交盖章',obj:'合同 PC-2026-0006',chg:'盖章状态: 待提交→已申请',ip:'10.38.21.7',priv:0},
+  {t:'2026-08-24 18:05:44',who:'系统管理员',role:'超级管理者',act:'调整角色',obj:'用户 刘晓',chg:'商务实习生→商务',ip:'10.38.21.2',priv:1},
+  {t:'2026-08-24 17:22:10',who:'系统管理员',role:'超级管理者',act:'导出报表(全量)',obj:'付款合同·全部',chg:'导出 320 行, 含附件名',ip:'10.38.21.2',priv:1},
+  {t:'2026-08-24 16:40:55',who:'吴浩',role:'商务组长',act:'添加单合同授权',obj:'合同 PC-2026-0007',chg:'授权 刘晓: 协作',ip:'10.38.22.9',priv:0},
+  {t:'2026-08-24 14:03:19',who:'吴浩',role:'商务组长',act:'成员换团队',obj:'用户 钱亮',chg:'商务二组→商务一组(虚线)',ip:'10.38.22.9',priv:0},
+];
+function addAudit(act,obj,before,after){AUDIT.unshift({t:new Date().toLocaleString('zh-CN'),who:curRole().name,role:curRole().name,act,obj,chg:after||'—',ip:'10.38.0.'+Math.floor(Math.random()*250),priv:(curRole().name.indexOf('超级')>=0)?1:0});if(document.getElementById('page-audit').classList.contains('active'))renderAudit()}
+function renderAudit(){
+  const only=document.getElementById('auditPriv')&&document.getElementById('auditPriv').checked;
+  const rows=only?AUDIT.filter(a=>a.priv):AUDIT;
+  document.getElementById('auditBody').innerHTML=rows.map(a=>`<tr${a.priv?' style="background:#fffaf0"':''}>
+    <td>${a.t}</td><td>${a.who}</td><td>${a.role}</td><td>${a.act}</td><td>${a.obj}</td><td>${a.chg}</td><td style="color:#909399">${a.ip}</td>
+    <td>${a.priv?'<span class="tag t-red">高权限</span>':'-'}</td></tr>`).join('');
+}
+
+
+/* ============ 合同名称旁「⋯」快捷入口（不进详情，仅白名单字段）============ */
+const STAGE_OPTS=[['ourSignFirst','双方未签，我方先签'],['customerSignFirst','双方未签，客户先签'],
+ ['customerNoOurSign','客户未签，我方已签'],['customerSignOurNo','客户已签，我方未签'],
+ ['bothSign','双方已签'],['archived','合同已归档'],['emailConfirmed','邮件已确认'],
+ ['emailConfirmCollection','邮件确认计收'],['noContract','无合同']];
+const QUICK_ITEMS=[
+ {k:'code',  t:'📄 填写 / 覆盖合同编号'},
+ {k:'stage', t:'🖊️ 更改合同签署阶段'},
+ {k:'dpaNo', t:'#️⃣ 填写 DPA 编号'},
+ {k:'dpaStage',t:'🖊️ 更改 DPA 签署阶段'},
+ {k:'ndaNo', t:'#️⃣ 填写 NDA 编号'},
+ {k:'ndaStage',t:'🖊️ 更改 NDA 签署阶段'},
+ {k:'files', t:'📎 回收合同附件（只增不减）'},
+];
+function closeQuickMenu(){const m=document.getElementById('qmenu');if(m)m.remove()}
+function openQuickMenu(ev,id){
+  ev.stopPropagation(); closeQuickMenu();
+  const c=CONTRACTS.find(x=>x.id===id); if(!c)return;
+  const d=document.createElement('div'); d.className='qmenu'; d.id='qmenu';
+  d.innerHTML=`<div class="qhead">快捷入口 · ${id}</div>`+
+    QUICK_ITEMS.map(i=>`<div class="qitem" onclick="quickAct('${id}','${i.k}')">${i.t}</div>`).join('');
+  document.body.appendChild(d);
+  const r=ev.target.getBoundingClientRect();
+  let top=r.bottom+6, left=r.left;
+  if(top+d.offsetHeight>window.innerHeight) top=Math.max(8,r.top-d.offsetHeight-6);
+  if(left+d.offsetWidth>window.innerWidth) left=window.innerWidth-d.offsetWidth-10;
+  d.style.top=top+'px'; d.style.left=left+'px';
+}
+function quickAct(id,k){
+  closeQuickMenu();
+  const c=CONTRACTS.find(x=>x.id===id); if(!c)return;
+  const sel=(cur)=>STAGE_OPTS.map(([v,l])=>`<option value="${l}" ${l===cur?'selected':''}>${l}</option>`).join('');
+  const M={
+    code:{title:'填写 / 覆盖合同编号',
+      body:`<div class="note">线上盖章完成后由集团回传自动填入；此处为<b>特殊情况手填</b>。已有编号能否覆盖=开放问题。</div>
+            <div class="fld"><label>合同编号</label><input id="q_v" value="${c.code==='—'?'':c.code}" placeholder="如 MI-OA-20260901"></div>`,
+      save:()=>{const v=document.getElementById('q_v').value.trim(); c.code=v||'—'; return '合同编号 → '+c.code;}},
+    stage:{title:'更改合同签署阶段',
+      body:`<div class="note">枚举 9 项；改为「合同已归档」时<b>首次</b>会捕获合同回收时间。</div>
+            <div class="fld"><label>合同签署阶段</label><select id="q_v">${sel(c.stage)}</select></div>`,
+      save:()=>{const v=document.getElementById('q_v').value; const first=(v==='合同已归档'&&c.stage!=='合同已归档'); c.stage=v;
+                return '签署阶段 → '+v+(first?'（已捕获合同回收时间）':'');}},
+    dpaNo:{title:'填写 DPA 编号',
+      body:`<div class="fld"><label>DPA 编号</label><input id="q_v" value="${c.dpaNo||''}" placeholder="创建时不填，此处维护"></div>`,
+      save:()=>{c.dpaNo=document.getElementById('q_v').value.trim(); return 'DPA 编号 → '+(c.dpaNo||'（空）');}},
+    dpaStage:{title:'更改 DPA 签署阶段',
+      body:`<div class="fld"><label>DPA 签署阶段</label><select id="q_v">${sel(c.dpaStage||'双方已签')}</select></div>`,
+      save:()=>{c.dpaStage=document.getElementById('q_v').value; return 'DPA 签署阶段 → '+c.dpaStage;}},
+    ndaNo:{title:'填写 NDA 编号',
+      body:`<div class="fld"><label>NDA 编号</label><input id="q_v" value="${c.ndaNo||''}" placeholder="创建时不填，此处维护"></div>`,
+      save:()=>{c.ndaNo=document.getElementById('q_v').value.trim(); return 'NDA 编号 → '+(c.ndaNo||'（空）');}},
+    ndaStage:{title:'更改 NDA 签署阶段',
+      body:`<div class="fld"><label>NDA 签署阶段</label><select id="q_v">${sel(c.ndaStage||'双方已签')}</select></div>`,
+      save:()=>{c.ndaStage=document.getElementById('q_v').value; return 'NDA 签署阶段 → '+c.ndaStage;}},
+    files:{title:'回收合同附件',
+      body:`<div class="note">附件<b>只增不减</b>，记录变更历史；导出命名规则=<b>合同ID-附件名称-数字</b>。当前已回收：<b>${c.files||0}</b> 个。</div>
+            <div class="fld"><label>选择附件</label><input type="file" id="q_f" multiple></div>`,
+      save:()=>{c.files=(c.files||0)+1; return '回收附件 +1（累计 '+c.files+' 个）';}},
+  }[k];
+  if(!M)return;
+  showModal(M.title, M.body, '保存', ()=>{
+    const msg=M.save(); closeModal(); renderList(); toast('已保存：'+msg);
+    addAudit('快捷入口·'+M.title, '合同 '+id, '', msg);
+  });
+}
+document.addEventListener('click',closeQuickMenu);
+window.addEventListener('resize',closeQuickMenu);
+
+
+/* ============ 状态沙盒（独立体验状态流转与字段联动）============ */
+const SB_INIT={contractStatus:'草稿',monetaAppr:'—',sealStatus:'未提交',code:'—',miId:'—',
+  stage:'双方未签，我方先签',coop:'正常合作',recycle:'—',push:'—'};
+let SB=Object.assign({},SB_INIT); let SB_LOG=[];
+const SB_STEPS=['草稿','moneta审批中','待提交盖章','已申请','集团审批中','已盖章','已归档'];
+function sbStepIdx(){
+  if(SB.sealStatus==='已归档')return 6;
+  if(SB.sealStatus==='已盖章')return 5;
+  if(SB.sealStatus==='集团审批中')return 4;
+  if(SB.sealStatus==='已申请')return 3;
+  if(SB.sealStatus==='待提交盖章')return 2;
+  if(SB.monetaAppr==='审批中')return 1;
+  return 0;
+}
+const SB_ACTIONS=[
+ {k:'submit',   t:'提交合同',        ok:()=>SB.contractStatus==='草稿'||SB.contractStatus==='已驳回'},
+ {k:'apprPass', t:'moneta 审批通过', ok:()=>SB.monetaAppr==='审批中'},
+ {k:'apprRej',  t:'moneta 审批驳回', ok:()=>SB.monetaAppr==='审批中'},
+ {k:'seal',     t:'提交集团盖章',    ok:()=>SB.sealStatus==='待提交盖章'||SB.sealStatus==='已终止'},
+ {k:'process',  t:'集团受理→审批中',  ok:()=>SB.sealStatus==='已申请'},
+ {k:'sealed',   t:'集团盖章完成(回传编号)', ok:()=>SB.sealStatus==='集团审批中'},
+ {k:'archive',  t:'归档(触发推送结算)', ok:()=>SB.sealStatus==='已盖章'},
+ {k:'stop',     t:'终止盖章',        ok:()=>['已申请','集团审批中'].includes(SB.sealStatus)},
+ {k:'cancel',   t:'作废',            ok:()=>['集团审批中','已盖章'].includes(SB.sealStatus)||SB.monetaAppr==='审批通过'},
+ {k:'pause',    t:'暂停合作',        ok:()=>SB.coop==='正常合作'},
+ {k:'resume',   t:'恢复合作',        ok:()=>SB.coop==='暂停合作'},
+];
+function sbAct(k){
+  const now=new Date().toLocaleString('zh-CN'); let chg='';
+  const set=(o)=>{const parts=[];for(const key in o){if(SB[key]!==o[key]){parts.push(`${key}: ${SB[key]} → ${o[key]}`);SB[key]=o[key];}}return parts.join('；')};
+  if(k==='reset'){SB=Object.assign({},SB_INIT);SB_LOG=[];renderSandbox();toast('沙盒已重置');return}
+  const a=SB_ACTIONS.find(x=>x.k===k); if(a&&!a.ok()){toast('当前状态不可执行：'+a.t);return}
+  switch(k){
+    case 'submit':   chg=set({contractStatus:'moneta审批中',monetaAppr:'审批中'}); break;
+    case 'apprPass': chg=set({contractStatus:'审批通过',monetaAppr:'审批通过',sealStatus:'待提交盖章'}); break;
+    case 'apprRej':  chg=set({contractStatus:'已驳回',monetaAppr:'审批驳回'}); break;
+    case 'seal':
+      if(['双方已签','合同已归档','邮件已确认','无合同'].includes(SB.stage)){toast('当前签署状态无法发起盖章');return}
+      chg=set({sealStatus:'已申请',miId:'MI-'+Math.floor(Math.random()*900000+100000)}); break;
+    case 'process':  chg=set({sealStatus:'集团审批中'}); break;
+    case 'sealed':   chg=set({sealStatus:'已盖章',code:'MI-OA-2026'+Math.floor(Math.random()*9000+1000)}); break;
+    case 'archive':  chg=set({sealStatus:'已归档',stage:'合同已归档',recycle:now,push:'已推送(自动)'}); break;
+    case 'stop':     chg=set({sealStatus:'已终止'}); break;
+    case 'cancel':   chg=set({contractStatus:'已作废',sealStatus:'已作废'}); break;
+    case 'pause':    chg=set({coop:'暂停合作'}); break;
+    case 'resume':   chg=set({coop:'正常合作'}); break;
+  }
+  SB_LOG.unshift({t:now,op:(a?a.t:k),chg:chg||'（无字段变化）'});
+  renderSandbox();
+}
+function renderSandbox(){
+  const box=document.getElementById('sbMachine'); if(!box)return;
+  const idx=sbStepIdx(); const dead=['已终止','已作废'].includes(SB.sealStatus)||SB.contractStatus==='已作废';
+  box.innerHTML=SB_STEPS.map((st,i)=>{
+    let cls='mnode'; if(i<idx)cls+=' done'; if(i===idx&&!dead)cls+=' active';
+    return `<span class="${cls}">${st}</span>`+(i<SB_STEPS.length-1?'<span class="march">→</span>':'');
+  }).join('')+(dead?`<span class="march">→</span><span class="mnode active" style="border-color:#f44336;color:#f44336;background:#fff0f0">${SB.sealStatus}</span>`:'');
+  document.getElementById('sbBtns').innerHTML=SB_ACTIONS.map(a=>
+    `<button class="btn ${a.ok()?'btn-outline':'btn-ghost'} btn-sm" ${a.ok()?'':'disabled'} onclick="sbAct('${a.k}')">${a.t}</button>`).join('');
+  const F=[['合同状态',SB.contractStatus],['moneta 审批状态',SB.monetaAppr],['盖章审批状态',SB.sealStatus],
+    ['合同编号',SB.code],['集团合同ID',SB.miId],['合同签署阶段',SB.stage],['合作状态',SB.coop],
+    ['合同回收时间',SB.recycle],['计提/结算推送',SB.push]];
+  document.getElementById('sbFields').innerHTML=F.map(([k,v])=>
+    `<div class="kv" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="k">${k}</span><b style="font-size:13px">${v}</b></div>`).join('');
+  document.getElementById('sbRow').innerHTML=`<tr>
+    <td>PC-SANDBOX-001</td><td>${SB.code}</td><td>${SB.miId}</td>
+    <td><span class="tag ${tagCls(SB.stage)}">${SB.stage}</span></td>
+    <td><span class="tag ${SB.coop==='暂停合作'?'t-red':'t-green'}">${SB.coop}</span></td>
+    <td><span class="tag ${tagCls(SB.monetaAppr)}">${SB.monetaAppr}</span></td>
+    <td><span class="tag ${tagCls(SB.sealStatus)}">${SB.sealStatus}</span></td>
+    <td>${SB.recycle}</td><td><span class="tag ${tagCls(SB.push)}">${SB.push}</span></td></tr>`;
+  document.getElementById('sbLog').innerHTML=SB_LOG.length?SB_LOG.map(l=>
+    `<tr><td>${l.t}</td><td>${l.op}</td><td>${l.chg}</td></tr>`).join('')
+    :'<tr><td colspan="3" style="text-align:center;color:#c0c4cc">暂无操作，点击上方按钮开始</td></tr>';
+}
+
+
+/* ============ 电子签：多方签署信息 + 合同附件 + 盖章位置（对齐集团页面）============ */
+function renderSignParties(){
+  const tb=document.querySelector('#tblParties tbody'); if(!tb)return;
+  const n=parseInt((document.getElementById('f_parties')||{value:'2'}).value,10)||2;
+  let h='';
+  for(let i=1;i<=n;i++){
+    const ours = i===1;
+    h+=`<tr>
+      <td><b>${i}</b><div class="hint">自动</div></td>
+      <td><select onchange="onPartyOursChange(this,${i})"><option value="yes"${ours?' selected':''}>是</option><option value="no"${ours?'':' selected'}>否</option></select></td>
+      <td><select id="pc_${i}">${ours?'<option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option>':'<option>Acme Media Ltd</option><option>GameHub Studio</option>'}</select></td>
+      <td><select onchange="onSignWayChange(this,${i})"><option value="seal">盖章</option><option value="sign">签字</option></select></td>
+      <td><select id="ps_${i}"><option value="1">1 公章</option><option value="2">2 财务章</option></select></td>
+      <td><input placeholder="签署人邮箱"></td>
+      <td><input placeholder="抄送人邮箱，逗号分隔"></td>
+    </tr>`;
+  }
+  tb.innerHTML=h;
+}
+function onPartyOursChange(sel,i){
+  const c=document.getElementById('pc_'+i); if(!c)return;
+  c.innerHTML = sel.value==='yes'
+    ? '<option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option>'
+    : '<option>Acme Media Ltd</option><option>GameHub Studio</option>';
+}
+function onSignWayChange(sel,i){
+  const s2=document.getElementById('ps_'+i); if(s2) s2.disabled = (sel.value==='sign');
+}
+/* —— 合同附件 + 盖章位置 —— */
+let ATTACHES=[{name:'框架协议最终版（盖章版）.pdf',time:'2026-09-01 15:46:11',status:'处理完成',our:[],other:[]}];
+function renderAttach(){
+  const tb=document.getElementById('tblAttach'); if(!tb)return;
+  tb.innerHTML=ATTACHES.length?ATTACHES.map((a,i)=>`<tr>
+    <td>${a.name}</td>
+    <td><a style="color:#3981ff;cursor:pointer" onclick="openSealPos(${i},'our')">我方位置${a.our.length?`(${a.our.length})`:''}</a>
+        &nbsp;|&nbsp;<a style="color:#3981ff;cursor:pointer" onclick="openSealPos(${i},'other')">对方位置${a.other.length?`(${a.other.length})`:''}</a></td>
+    <td>${a.time}</td><td><span class="tag t-green">${a.status}</span></td>
+    <td class="row-actions"><a onclick="delAttach(${i})">删除</a></td></tr>`).join('')
+    :'<tr><td colspan="5" style="text-align:center;color:#c0c4cc">请上传合同附件</td></tr>';
+}
+function addAttach(inp){
+  const f=inp.files&&inp.files[0]; 
+  ATTACHES.push({name:f?f.name:'新附件.pdf',time:new Date().toLocaleString('zh-CN'),status:'处理完成',our:[],other:[]});
+  renderAttach(); toast('附件已上传（演示）'); inp.value='';
+}
+function delAttach(i){ATTACHES.splice(i,1);renderAttach();toast('附件已删除')}
+/* 盖章位置设置器：点击页面区域放置印章 → 生成坐标（相对左下角） */
+let SP_CTX={i:0,side:'our',page:1,list:[]};
+function openSealPos(i,side){
+  SP_CTX={i:i,side:side,page:1,list:(ATTACHES[i][side]||[]).slice()};
+  const who = side==='our' ? '我方位置设置' : '对方位置设置';
+  const subject = side==='our' ? 'Xiaomi Singapore Pte. Ltd.' : 'Acme Media Ltd';
+  showModal(who, `
+    <div class="note">签约主体：<b>${subject}</b>　附件：<b>${ATTACHES[i].name}</b><br>
+      <b>将印章拖动（点击）到文件区域即可获取盖章位置</b>；坐标相对<b>左下角</b>。对应集团 SignInfoDto：signType/posX/posY/posPage/edgePosition。</div>
+    <div style="display:flex;gap:12px">
+      <div style="flex-shrink:0;text-align:center">
+        <div id="spStamp" draggable="true" style="width:74px;height:74px;border:2px dashed #C9A24B;border-radius:50%;color:#C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:grab">示例印章</div>
+        <div class="hint" style="margin-top:6px">拖到右侧</div>
+        <div class="fld" style="margin-top:10px;text-align:left"><label>签署模式 signType</label>
+          <select id="spType"><option value="1">1 单页</option><option value="0">0 自由签署</option><option value="2">2 多页</option><option value="3">3 骑缝</option></select></div>
+        <div class="fld" style="text-align:left"><label>骑缝位置 edgePosition</label>
+          <select id="spEdge"><option value="">—</option><option value="1">1 右侧中间</option><option value="2">2 右侧上方</option><option value="3">3 右侧底部</option></select></div>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;font-size:12px">
+          页码：<select id="spPage" onchange="SP_CTX.page=parseInt(this.value,10);renderSpList()">
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n} 页</option>`).join('')}</select>
+          <span class="hint">posPage 支持 单页1 / 连续1-5 / 间隔1,3,5</span>
+        </div>
+        <div id="spDoc" onclick="placeStamp(event)" ondragover="event.preventDefault()" ondrop="placeStamp(event)"
+             style="position:relative;height:230px;background:#fff;border:1px solid #dcdfe6;border-radius:6px;overflow:hidden;cursor:crosshair">
+          <div style="position:absolute;inset:14px;border:1px dashed #eef0f3;color:#c0c4cc;font-size:12px;padding:8px">PDF 预览区（点击/拖入放置印章）</div>
+        </div>
+        <table class="grid" style="margin-top:8px"><thead><tr><th>编号</th><th>坐标(x,y)</th><th>页码</th><th>模式</th><th>操作</th></tr></thead>
+          <tbody id="spList"></tbody></table>
+      </div>
+    </div>`, '保存', ()=>{
+      ATTACHES[SP_CTX.i][SP_CTX.side]=SP_CTX.list.slice();
+      closeModal(); renderAttach();
+      toast(`已保存 ${SP_CTX.list.length} 个盖章位置`);
+    });
+  setTimeout(renderSpList,0);
+}
+function placeStamp(ev){
+  ev.preventDefault();
+  const box=document.getElementById('spDoc'); if(!box)return;
+  const r=box.getBoundingClientRect();
+  const x=Math.round(ev.clientX-r.left), yTop=Math.round(ev.clientY-r.top);
+  const y=Math.round(r.height-yTop); // 相对左下角
+  const t=document.getElementById('spType'), e=document.getElementById('spEdge');
+  SP_CTX.list.push({no:SP_CTX.list.length+1,x:x,y:y,page:SP_CTX.page,type:t?t.value:'1',edge:e?e.value:''});
+  renderSpList();
+}
+function renderSpList(){
+  const tb=document.getElementById('spList'); if(!tb)return;
+  const box=document.getElementById('spDoc');
+  if(box){
+    box.querySelectorAll('.stampdot').forEach(n=>n.remove());
+    SP_CTX.list.filter(p=>p.page===SP_CTX.page).forEach(p=>{
+      const d=document.createElement('div'); d.className='stampdot';
+      d.style.cssText=`position:absolute;left:${p.x-22}px;top:${box.getBoundingClientRect().height-p.y-22}px;width:44px;height:44px;border:2px solid #C9A24B;border-radius:50%;color:#C9A24B;font-size:10px;display:flex;align-items:center;justify-content:center;background:rgba(201,162,75,.08)`;
+      d.textContent='印章'+p.no; box.appendChild(d);
+    });
+  }
+  tb.innerHTML=SP_CTX.list.length?SP_CTX.list.map((p,i)=>`<tr>
+    <td>印章${p.no}</td><td>${p.x},${p.y}</td><td>${p.page} 页</td>
+    <td>${({'0':'自由','1':'单页','2':'多页','3':'骑缝'})[p.type]||p.type}${p.edge?'/边'+p.edge:''}</td>
+    <td class="row-actions"><a onclick="rmStamp(${i})">删除</a></td></tr>`).join('')
+    :'<tr><td colspan="5" style="text-align:center;color:#c0c4cc">尚未设置盖章位置</td></tr>';
+}
+function rmStamp(i){SP_CTX.list.splice(i,1);SP_CTX.list.forEach((p,k)=>p.no=k+1);renderSpList()}
+
+/* ============ 初始化 ============ */
+renderList();renderMatrix();renderTree();renderGrant();renderMachine();renderSandbox();onRoleChange();
+document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
+</script>
+</body>
+</html>
