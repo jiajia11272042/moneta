@@ -531,16 +531,25 @@ const FORM_HTML=`
   <div class="fld hidden" id="w_depositCur"><label>保证金币种</label><select><option>USD</option><option>EUR</option><option>CNY</option><option>SGD</option></select></div>
 </div></div>
 
-<div class="form-section"><div class="form-section-head"><span class="idx">5</span>签约信息</div><div class="form-grid">
-  <div class="fld"><label><span class="req">*</span>我方主体</label><select><option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option></select></div>
-  <div class="fld"><label>我方主体注册地</label><select disabled><option>新加坡</option><option>中国</option><option>印度</option><option>其他</option></select><div class="hint">由我方主体自动匹配，影响适用法律与税务</div></div>
-  <div class="fld"><label><span class="req">*</span>我方主体地址（到门牌号）</label><input placeholder="财务要求·新增"></div>
-  <div class="fld"><label><span class="req">*</span>我方主体邮编</label><input placeholder="财务要求·新增"></div>
-  <div class="fld"><label><span class="req">*</span>客户集团名称</label><input></div>
-  <div class="fld"><label><span class="req">*</span>客户公司名称</label><input></div>
-  <div class="fld"><label><span class="req">*</span>客户注册地</label><input placeholder="国家/地区"></div>
-  <div class="fld"><label><span class="req">*</span>客户主体地址</label><input></div>
-  <div class="fld"><label><span class="req">*</span>客户主体邮编</label><input></div>
+<div class="form-section"><div class="form-section-head"><span class="idx">5</span>签约信息（我方主体 / 客户信息均可添加多条）</div>
+<div style="padding:14px 18px">
+  <div class="note">集团 <code>ourOrganizations</code> / <code>otherOrganizations</code> 均为 List 且必传，故两侧都支持多条。<b>地址/邮编不是集团要求</b>，属财务侧要求（供应商创建与付款流程/结算客商），不传集团。</div>
+  <div style="display:flex;align-items:center;gap:8px;margin:10px 0 6px">
+    <b style="font-size:13px">A. 我方签约主体</b>
+    <button class="btn btn-outline btn-sm" onclick="addOur()">+ 添加主体</button>
+  </div>
+  <div class="tbl-scroll"><table class="grid"><thead><tr>
+    <th>我方主体 *</th><th>注册地（自动）</th><th>主体地址（到门牌号）*</th><th>主体邮编 *</th><th>操作</th>
+  </tr></thead><tbody id="tblOur"></tbody></table></div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px">
+    <b style="font-size:13px">B. 客户（对方）签约信息</b>
+    <button class="btn btn-outline btn-sm" onclick="addCust()">+ 添加客户</button>
+  </div>
+  <div class="tbl-scroll"><table class="grid"><thead><tr>
+    <th>客户集团名称 *</th><th>客户公司名称 *</th><th>客户注册地 *</th><th>客户主体地址 *</th><th>客户主体邮编 *</th><th>操作</th>
+  </tr></thead><tbody id="tblCust"></tbody></table></div>
+  <div class="hint" style="margin-top:8px">板块六「电子签约信息」的公司下拉数据源 = 上面已添加的主体；归档推送结算时多条客户逐条推送。</div>
 </div></div>
 
 <div class="form-section"><div class="form-section-head"><span class="idx">6</span>盖章信息</div><div class="form-grid">
@@ -610,7 +619,7 @@ function linkEsign(){const y=document.getElementById('f_esign').value==='yes';do
 function linkAbroad(){const ab=document.getElementById('f_abroad').value==='yes';show('w_platform',!ab);show('w_platformAbroad',ab)}
 function linkIsOurs(){const ours=document.getElementById('f_isours').value==='yes';show('w_ourCompany',ours);show('w_custCompany',!ours);['w_ourEmail','w_ourCc','w_otherEmail','w_otherCc'].forEach(x=>show(x,!ours))}
 function show(id,cond){const el=document.getElementById(id);if(el)el.classList.toggle('hidden',!cond)}
-function bindFormLinkage(){renderSignParties();renderAttach();
+function bindFormLinkage(){renderOur();renderCust();renderSignParties();renderAttach();
   const sv=document.getElementById('f_signValid');
   if(sv&&!sv.value){const d=new Date();d.setDate(d.getDate()+30);sv.value=d.toISOString().slice(0,10);}linkBiz();linkForm();linkRenew();linkPause();linkDpa();linkNda();linkCycle();linkPay();linkCps();linkGuar();linkDeposit();linkEsign();linkIsOurs()}
 
@@ -972,6 +981,36 @@ function renderSandbox(){
 }
 
 
+
+/* ============ 签约信息：多我方主体 / 多客户 ============ */
+const OUR_OPTS=['Xiaomi H.K. Limited','Xiaomi Singapore Pte.','Xiaomi Technology India'];
+const REG_MAP={'Xiaomi H.K. Limited':'中国','Xiaomi Singapore Pte.':'新加坡','Xiaomi Technology India':'印度'};
+let OURS=[{name:'Xiaomi H.K. Limited',addr:'',zip:''}];
+let CUSTS=[{group:'Acme Group',company:'Acme Media Ltd',reg:'新加坡',addr:'',zip:''}];
+function renderOur(){
+  const tb=document.getElementById('tblOur'); if(!tb)return;
+  tb.innerHTML=OURS.map((o,i)=>`<tr>
+    <td><select onchange="OURS[${i}].name=this.value;renderOur();renderSignParties()">${OUR_OPTS.map(v=>`<option${v===o.name?' selected':''}>${v}</option>`).join('')}</select></td>
+    <td><input value="${REG_MAP[o.name]||''}" disabled style="width:90px"></td>
+    <td><input value="${o.addr}" placeholder="国家、城市、详细地址" oninput="OURS[${i}].addr=this.value"></td>
+    <td><input value="${o.zip}" placeholder="邮编" style="width:100px" oninput="OURS[${i}].zip=this.value"></td>
+    <td class="row-actions">${OURS.length>1?`<a onclick="OURS.splice(${i},1);renderOur();renderSignParties()">删除</a>`:'<a class="disabled">删除</a>'}</td></tr>`).join('');
+}
+function addOur(){OURS.push({name:OUR_OPTS[0],addr:'',zip:''});renderOur();renderSignParties();toast('已添加我方主体')}
+function renderCust(){
+  const tb=document.getElementById('tblCust'); if(!tb)return;
+  tb.innerHTML=CUSTS.map((c,i)=>`<tr>
+    <td><input value="${c.group}" placeholder="客户集团名称" oninput="CUSTS[${i}].group=this.value"></td>
+    <td><input value="${c.company}" placeholder="客户公司名称" oninput="CUSTS[${i}].company=this.value;renderSignParties()"></td>
+    <td><input value="${c.reg}" placeholder="国家/地区" style="width:100px" oninput="CUSTS[${i}].reg=this.value"></td>
+    <td><input value="${c.addr}" placeholder="国家、城市、详细地址" oninput="CUSTS[${i}].addr=this.value"></td>
+    <td><input value="${c.zip}" placeholder="邮编" style="width:100px" oninput="CUSTS[${i}].zip=this.value"></td>
+    <td class="row-actions">${CUSTS.length>1?`<a onclick="CUSTS.splice(${i},1);renderCust();renderSignParties()">删除</a>`:'<a class="disabled">删除</a>'}</td></tr>`).join('');
+}
+function addCust(){CUSTS.push({group:'',company:'',reg:'',addr:'',zip:''});renderCust();renderSignParties();toast('已添加客户主体')}
+function ourNames(){return OURS.map(o=>o.name).filter(Boolean)}
+function custNames(){return CUSTS.map(c=>c.company).filter(Boolean)}
+
 /* ============ 电子签：多方签署信息 + 合同附件 + 盖章位置（对齐集团页面）============ */
 function renderSignParties(){
   const tb=document.querySelector('#tblParties tbody'); if(!tb)return;
@@ -982,7 +1021,7 @@ function renderSignParties(){
     h+=`<tr>
       <td><b>${i}</b><div class="hint">自动</div></td>
       <td><select onchange="onPartyOursChange(this,${i})"><option value="yes"${ours?' selected':''}>是</option><option value="no"${ours?'':' selected'}>否</option></select></td>
-      <td><select id="pc_${i}">${ours?'<option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option>':'<option>Acme Media Ltd</option><option>GameHub Studio</option>'}</select></td>
+      <td><select id="pc_${i}">${(ours?ourNames():custNames()).map(v=>`<option>${v}</option>`).join('')||'<option>（请先在签约信息中添加）</option>'}</select></td>
       <td><select onchange="onSignWayChange(this,${i})"><option value="seal">盖章</option><option value="sign">签字</option></select></td>
       <td><select id="ps_${i}"><option value="1">1 公章</option><option value="2">2 财务章</option></select></td>
       <td><input placeholder="签署人邮箱"></td>
@@ -993,9 +1032,8 @@ function renderSignParties(){
 }
 function onPartyOursChange(sel,i){
   const c=document.getElementById('pc_'+i); if(!c)return;
-  c.innerHTML = sel.value==='yes'
-    ? '<option>Xiaomi H.K. Limited</option><option>Xiaomi Singapore Pte.</option>'
-    : '<option>Acme Media Ltd</option><option>GameHub Studio</option>';
+  const list = sel.value==='yes' ? ourNames() : custNames();
+  c.innerHTML = list.map(v=>`<option>${v}</option>`).join('') || '<option>（请先在签约信息中添加）</option>';
 }
 function onSignWayChange(sel,i){
   const s2=document.getElementById('ps_'+i); if(s2) s2.disabled = (sel.value==='sign');
