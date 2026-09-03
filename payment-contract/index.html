@@ -361,6 +361,16 @@ table.grid tr:hover td.fz{background:#f7f9ff}
         </div>
       </div>
       <div class="panel">
+        <div class="panel-title">合同到期提醒 · 飞书卡片预览
+          <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+            <label style="font-size:12px;color:#909399">到期日</label>
+            <input type="date" id="rmDue" onchange="renderRemind()" style="padding:4px 8px;border:1px solid #dcdfe6;border-radius:5px;font-size:12px">
+          </span>
+        </div>
+        <div class="note">到期前 <b>3 / 2 / 1 个月</b>各提醒一次，飞书通知；对象＝<b>合同对接人 + 运营对接人 + 国际销管（2 人，名单见 PRD）</b>。勾选「长期有效」不触发；到期日变更后按新日期重算。</div>
+        <div id="rmCards" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+      </div>
+      <div class="panel">
         <div class="panel-title">操作记录</div>
         <table class="grid"><thead><tr><th>时间</th><th>操作</th><th>字段变化</th></tr></thead><tbody id="sbLog"></tbody></table>
       </div>
@@ -400,7 +410,7 @@ function go(p){
   if(p==='seal')renderMachine();
   if(p==='user')renderUser();
   if(p==='audit')renderAudit();
-  if(p==='sandbox')renderSandbox();
+  if(p==='sandbox'){renderSandbox();renderRemind();}
 }
 
 /* ============ 角色能力矩阵 ============ */
@@ -1134,8 +1144,39 @@ function renderSpList(){
 }
 function rmStamp(i){SP_CTX.list.splice(i,1);SP_CTX.list.forEach((p,k)=>p.no=k+1);renderSpList()}
 
+
+/* ============ 合同到期提醒（飞书卡片预览）============ */
+function renderRemind(){
+  const box=document.getElementById('rmCards'); if(!box)return;
+  const el=document.getElementById('rmDue');
+  let due=el&&el.value?new Date(el.value):null;
+  if(!due){const d=new Date();d.setMonth(d.getMonth()+4);due=d;if(el)el.value=due.toISOString().slice(0,10);}
+  const fmt=(d)=>`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  box.innerHTML=[3,2,1].map(m=>{
+    const t=new Date(due); t.setMonth(t.getMonth()-m);
+    const past=t<new Date();
+    return `<div style="border:1px solid #e4e7ed;border-radius:10px;overflow:hidden;background:#fff">
+      <div style="background:#1e2a3a;color:#F3EEE3;padding:9px 12px;font-size:12.5px;font-weight:600">
+        📄 合同即将到期提醒 ${past?'<span style="float:right;font-weight:400;opacity:.7">已过</span>':''}
+      </div>
+      <div style="padding:11px 12px;font-size:12px;line-height:1.9;color:#303133">
+        <div style="margin-bottom:6px">吴浩，你的合同 ID=PC-SANDBOX-001 还有 <b style="color:#C9A24B">${m} 个月</b>到期，若需续签请在到期前完成</div>
+        <div style="color:#909399">客户名称：<span style="color:#303133">Acme Media Ltd</span></div>
+        <div style="color:#909399">合同ID：<span style="color:#303133">PC-SANDBOX-001</span></div>
+        <div style="color:#909399">合同名称：<span style="color:#303133">沙盒演示合同</span></div>
+        <div style="color:#909399">当前到期日：<span style="color:#303133">${fmt(due)}</span></div>
+        <div style="color:#909399">提醒时间：<span style="color:#303133">${fmt(t)}</span></div>
+        <div style="margin-top:8px;color:#3981ff;cursor:pointer" onclick="toast('演示：跳转合同详情')">查看合同 ›</div>
+      </div>
+      <div style="padding:8px 12px;border-top:1px solid #f2f3f5;font-size:11px;color:#909399">
+        接收：合同对接人 · 运营对接人 · 国际销管×2
+      </div>
+    </div>`;
+  }).join('');
+}
+
 /* ============ 初始化 ============ */
-renderList();renderMatrix();renderTree();renderGrant();renderMachine();renderSandbox();onRoleChange();
+renderList();renderMatrix();renderTree();renderGrant();renderMachine();renderSandbox();renderRemind();onRoleChange();
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
 </script>
 </body>
