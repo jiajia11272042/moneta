@@ -527,10 +527,11 @@ const FORM_HTML=`
   <div class="fld"><label><span class="req">*</span>归因方式</label><select><option>小米自归因</option><option>客户平台</option><option>三方平台</option></select></div>
   <div class="fld"><label><span class="req">*</span>归因平台</label><input placeholder="归因平台"></div>
   <div class="fld"><label><span class="req">*</span>是否有保底金额</label><select id="f_guar" onchange="linkGuar()"><option value="no">否</option><option value="yes">是</option></select></div>
-  <div class="fld hidden" id="w_guar"><label>保底金额</label><input type="number"></div>
+  <div class="fld hidden" id="w_guar"><label><span class="req">*</span>保底金额</label><input type="number" placeholder="数值"></div>
+  <div class="fld hidden" id="w_guarCur"><label><span class="req">*</span>保底金额币种</label><select><option>USD</option><option>INR</option><option>EUR</option><option>RUB</option><option>CNY</option><option>HKD</option><option>SGD</option></select><div class="hint">有保底金额时必填</div></div>
   <div class="fld"><label><span class="req">*</span>是否有保证金</label><select id="f_deposit" onchange="linkDeposit()"><option value="no">否</option><option value="yes">是</option></select></div>
   <div class="fld hidden" id="w_deposit"><label><span class="req">*</span>保证金金额</label><input type="number"></div>
-  <div class="fld hidden" id="w_depositCur"><label>保证金币种</label><select><option>USD</option><option>EUR</option><option>CNY</option><option>SGD</option></select></div>
+  <div class="fld hidden" id="w_depositCur"><label><span class="req">*</span>保证金币种</label><select><option>USD</option><option>EUR</option><option>CNY</option><option>SGD</option></select></div>
 </div></div>
 
 <div class="form-section"><div class="form-section-head"><span class="idx">5</span>签约信息（我方主体 / 客户信息均可添加多条）</div>
@@ -623,7 +624,7 @@ function linkRate(){
 }
 function linkCps(){const el=document.getElementById('sm_cps');const cps=el?el.checked:true;document.querySelectorAll('.cps').forEach(e=>e.classList.toggle('hidden',!cps))}
 function calcShare(){const o=parseFloat(document.getElementById('f_shareO').value);if(!isNaN(o))document.getElementById('f_shareM').value=(100-o)+'%'}
-function linkGuar(){show('w_guar',document.getElementById('f_guar').value==='yes')}
+function linkGuar(){const y=document.getElementById('f_guar').value==='yes';show('w_guar',y);show('w_guarCur',y)}
 function linkDeposit(){const y=document.getElementById('f_deposit').value==='yes';show('w_deposit',y);show('w_depositCur',y)}
 function linkEsign(){const y=document.getElementById('f_esign').value==='yes';document.querySelectorAll('.esign').forEach(e=>e.classList.toggle('hidden',!y));if(y)linkAbroad();}
 function linkAbroad(){const ab=document.getElementById('f_abroad').value==='yes';show('w_platform',!ab);show('w_platformAbroad',ab)}
