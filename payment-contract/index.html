@@ -262,10 +262,14 @@ table.grid tr:hover td.fz{background:#f7f9ff}
 
     <!-- ============ 团队管理页 ============ -->
     <div class="page" id="page-team">
-      <div class="note">团队为 moneta 一等实体：支持<b>任意层级树</b>、条线类型、负责人、关联业务线。换团队 = 关闭旧归属 + 新增归属，不改动其他人数据。</div>
+      <div class="note">团队为 moneta 一等实体：支持<b>任意层级树</b>、条线类型、负责人、关联业务线。核心规则（§4.4.1）：<b>允许单人团队</b>；<b>负责人须手动指定</b>（不自动，避免隐式提权）且<b>必须是本团队成员</b>；同一人在同团队<b>不可重复加入</b>；一人多团队时<b>主归属唯一</b>、数据范围<b>取并集</b>；<b>有成员或下级团队时不可停用</b>；负责人<b>可为空但会提示</b>。</div>
       <div class="two-col">
         <div class="panel">
-          <div class="panel-title">团队树 <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="toast('演示：新增团队')">+ 新增团队</button></div>
+          <div class="panel-title">团队树
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <button class="btn btn-outline btn-sm" onclick="openTeamModal('add')">+ 新增团队</button>
+          </span></div>
+        <div id="teamHealth" style="margin-bottom:8px"></div>
           <ul class="tree" id="teamTree"></ul>
         </div>
         <div class="panel">
@@ -279,14 +283,23 @@ table.grid tr:hover td.fz{background:#f7f9ff}
     <div class="page" id="page-scope">
       <div class="note">权限=<b>可配置</b>：角色 = 一组<b>功能权限点</b>（读/写）+ 一组<b>数据权限规则</b>。数据范围由可<b>叠加规则</b>组成：<b>本人 / 团队子树 / 业务线 / 全量</b>，取并集 ∪ 单合同授权。审批不做角色权限，交<b>小米审批流</b>。下表仅为<b>参考配置示例</b>，实际可自定义（可新建任意角色）。</div>
       <div class="panel">
-        <div class="panel-title">参考角色配置示例（角色与权限均可配置）</div>
-        <div style="overflow-x:auto">
-          <table class="grid">
-            <thead><tr><th>角色</th><th>创建/编辑</th><th>提交/撤销审批</th><th>提交/撤销盖章</th><th>作废</th><th>导出</th><th>默认数据范围</th></tr></thead>
-            <tbody id="matrixBody"></tbody>
-          </table>
+        <div class="panel-title">① 功能权限点配置（模块 → 功能 → 操作，逐项配读/写）
+          <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <label style="font-size:12px;color:#909399">配置角色</label>
+            <select id="ppRole" onchange="renderPP()" style="padding:5px 10px;border:1px solid #dcdfe6;border-radius:5px;font-size:12px">
+              <option value="sales">销售</option><option value="bizLead">商务组长</option>
+              <option value="saleAdmin" selected>销管</option><option value="ops">运营</option>
+              <option value="finance">财务</option><option value="abc">abc（自定义新角色）</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="ppPreset('none')">全不选</button>
+            <button class="btn btn-ghost btn-sm" onclick="ppPreset('read')">仅读</button>
+            <button class="btn btn-primary btn-sm" onclick="toast('演示：已保存该角色的权限点配置')">保存</button>
+          </span>
         </div>
+        <div class="note">角色 = 一组功能权限点 + 一组数据权限规则。<b>可新建任意角色</b>（如 abc）并勾选其能做什么。<b>审批不在此配置</b>——审批到谁由小米审批流决定（moneta 审批节点＝互联网业务部-综合管理部-国际销管，或签）。</div>
+        <div id="ppTree"></div>
       </div>
+
       <div class="panel">
         <div class="panel-title">数据范围配置（示例用户：吴浩 · 商务组长）</div>
         <div style="font-size:12.5px;color:#606266;margin-bottom:6px">组织维度</div>
@@ -407,6 +420,7 @@ function go(p){
   const nav=document.getElementById('nav-'+p); if(nav)nav.classList.add('active');
   document.getElementById('pageTitle').textContent=TITLES[p][0];
   document.getElementById('pageSub').textContent=TITLES[p][1];
+  try{location.hash='#'+p}catch(e){}
   if(p==='seal')renderMachine();
   if(p==='user')renderUser();
   if(p==='audit')renderAudit();
@@ -726,43 +740,144 @@ function showModal(title,body,okText,onOk){
 function closeModal(){document.getElementById('mask').classList.remove('show');document.getElementById('mask').innerHTML=''}
 
 /* ============ 团队树 ============ */
-const TEAMS={id:'t0',name:'IIB 商务中心',type:'商务',leader:'商务总经理·陈总',biz:['海外-广告DSP','海外-广告效果','海外游戏发行-广告','海外-增值业务','海外互联网电视'],members:2,children:[
-  {id:'t1',name:'商务一组',type:'商务',leader:'吴浩（组长）',biz:['海外-广告DSP','海外-广告效果'],members:4,children:[
-    {id:'t11',name:'DSP 小组',type:'商务',leader:'刘晓',biz:['海外-广告DSP'],members:3,children:[]}
+const TEAMS={id:'t0',name:'IIB 商务中心',type:'商务',leader:'陈总',biz:['海外-广告DSP','海外-广告效果','海外游戏发行-广告','海外-增值业务','海外互联网电视'],
+  members:[{n:'陈总',leader:true,mt:'主归属',t:'2025-01-01'},{n:'李蒙',leader:false,mt:'主归属',t:'2025-02-01'}],children:[
+  {id:'t1',name:'商务一组',type:'商务',leader:'吴浩',biz:['海外-广告DSP','海外-广告效果'],
+    members:[{n:'吴浩',leader:true,mt:'主归属',t:'2025-03-01'},{n:'刘晓',leader:false,mt:'主归属',t:'2025-06-15'},{n:'钱亮',leader:false,mt:'虚线归属',t:'2026-07-01'}],children:[
+    {id:'t11',name:'DSP 小组',type:'商务',leader:'刘晓',biz:['海外-广告DSP'],
+      members:[{n:'刘晓',leader:true,mt:'虚线归属',t:'2025-07-01'}],children:[]}
   ]},
-  {id:'t2',name:'商务二组',type:'商务',leader:'赵凯（组长）',biz:['海外游戏发行-广告','海外-增值业务'],members:4,children:[]},
-  {id:'t3',name:'TV 业务组',type:'商务',leader:'孙磊',biz:['海外互联网电视'],members:3,children:[]},
+  {id:'t2',name:'商务二组',type:'商务',leader:'赵凯',biz:['海外游戏发行-广告','海外-增值业务'],
+    members:[{n:'赵凯',leader:true,mt:'主归属',t:'2025-03-01'},{n:'林静',leader:false,mt:'主归属',t:'2026-02-01'}],children:[]},
+  {id:'t3',name:'TV 业务组',type:'商务',leader:'',biz:['海外互联网电视'],
+    members:[{n:'孙磊',leader:false,mt:'主归属',t:'2026-05-01'}],children:[]},
 ]};
+let SEL_TEAM='t1';
 function renderTree(){
   document.getElementById('teamTree').innerHTML=treeNode(TEAMS);
-  selTeam('t1');
+  renderHealth(); selTeam(SEL_TEAM);
 }
 function treeNode(n){
   const kids=n.children&&n.children.length?`<ul>${n.children.map(treeNode).join('')}</ul>`:'';
   const tog=n.children&&n.children.length?'▾':'•';
-  return `<li><div class="node" onclick="selTeam('${n.id}')" id="node-${n.id}"><span class="toggle">${tog}</span><span class="tname">${n.name}</span><span class="badge">${n.members}人</span><span class="tmeta">· ${n.leader}</span></div>${kids}</li>`;
+  const warn=!n.leader?' <span title="该团队未指定负责人" style="color:#e6a23c">⚠️</span>':'';
+  return `<li><div class="node" onclick="selTeam('${n.id}')" id="node-${n.id}"><span class="toggle">${tog}</span><span class="tname">${n.name}</span><span class="badge">${n.members.length}人</span><span class="tmeta">· ${n.leader||'未指定负责人'}</span>${warn}</div>${kids}</li>`;
 }
 function findTeam(n,id){if(n.id===id)return n;for(const c of(n.children||[])){const r=findTeam(c,id);if(r)return r}return null}
+function eachTeam(n,fn){fn(n);(n.children||[]).forEach(c=>eachTeam(c,fn))}
+function renderHealth(){
+  const box=document.getElementById('teamHealth'); if(!box)return;
+  const bad=[]; eachTeam(TEAMS,t=>{ if(!t.leader) bad.push(t.name); });
+  box.innerHTML = bad.length
+    ? `<div class="note" style="border-color:#e6a23c;background:#fffaf0;color:#8a6d3b">⚠️ <b>团队健康检查</b>：${bad.length} 个团队未指定负责人（${bad.join('、')}）。无负责人时该团队数据无人统管；若为顶级团队需优先处理。每月向超管推送待处理清单。</div>`
+    : `<div class="note" style="border-color:#16a34a;background:#f0fff5;color:#16803c">✓ 团队健康检查通过：所有团队均已指定负责人</div>`;
+}
 function selTeam(id){
+  SEL_TEAM=id;
   document.querySelectorAll('.tree .node').forEach(e=>e.classList.remove('sel'));
-  const nd=document.getElementById('node-'+id);if(nd)nd.classList.add('sel');
-  const t=findTeam(TEAMS,id);if(!t)return;
+  const nd=document.getElementById('node-'+id); if(nd)nd.classList.add('sel');
+  const t=findTeam(TEAMS,id); if(!t)return;
+  const canDel = t.members.length===0 && (!t.children||t.children.length===0);
   document.getElementById('teamDetailTitle').textContent='团队详情 · '+t.name;
   document.getElementById('teamDetail').innerHTML=`
     <div class="kv"><span class="k">条线类型</span><span>${t.type}</span></div>
-    <div class="kv"><span class="k">负责人</span><span>${t.leader}</span></div>
-    <div class="kv"><span class="k">成员数</span><span>${t.members} 人</span></div>
+    <div class="kv"><span class="k">负责人</span><span>${t.leader?t.leader:'<span style="color:#e6a23c">未指定（可为空，但会提示）</span>'}</span></div>
+    <div class="kv"><span class="k">成员数</span><span>${t.members.length} 人${t.members.length===1?'（单人团队，允许）':''}</span></div>
     <div class="kv"><span class="k">关联业务线</span><span style="max-width:220px;text-align:right">${t.biz.map(b=>`<span class="chip">${b}</span>`).join('')}</span></div>
-    <div style="margin:14px 0 6px;font-weight:600;font-size:13px">成员归属（换团队 = 关旧开新）</div>
-    <table class="grid"><thead><tr><th>成员</th><th>是否负责人</th><th>归属类型</th><th>加入时间</th><th>操作</th></tr></thead>
-    <tbody>
-      <tr><td>吴浩</td><td><span class="tag t-blue">负责人</span></td><td>主归属</td><td>2025-03-01</td><td class="row-actions"><a onclick="toast('演示：调整归属')">换团队</a></td></tr>
-      <tr><td>刘晓</td><td>-</td><td>主归属</td><td>2025-06-15</td><td class="row-actions"><a onclick="toast('演示：调整归属')">换团队</a><a onclick="toast('演示：设为负责人')">设负责人</a></td></tr>
-      <tr><td>钱亮</td><td>-</td><td><span class="tag t-purple">虚线归属</span></td><td>2026-07-01</td><td class="row-actions"><a onclick="toast('演示：移除虚线')">移除</a></td></tr>
-    </tbody></table>
-    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="toast('演示：添加成员')">+ 添加成员</button><button class="btn btn-ghost btn-sm" onclick="toast('演示：新增子团队')">+ 新增子团队</button></div>`;
+    <div style="margin:14px 0 6px;display:flex;align-items:center;gap:8px">
+      <b style="font-size:13px">成员归属</b>
+      <button class="btn btn-outline btn-sm" onclick="openMemberModal('${t.id}')">+ 添加成员</button>
+      <button class="btn btn-ghost btn-sm" onclick="openTeamModal('edit','${t.id}')">编辑团队</button>
+      <button class="btn btn-ghost btn-sm" onclick="delTeam('${t.id}')" ${canDel?'':'disabled title="团队下存在成员或下级团队，需先迁出/迁移"'}>停用团队</button>
+    </div>
+    <table class="grid"><thead><tr><th>成员</th><th>负责人</th><th>归属类型</th><th>加入时间</th><th>操作</th></tr></thead>
+    <tbody>${t.members.map((m,i)=>`<tr>
+      <td>${m.n}</td>
+      <td>${m.leader?'<span class="tag t-blue">负责人</span>':'-'}</td>
+      <td>${m.mt==='虚线归属'?'<span class="tag t-purple">虚线归属</span>':'<span class="tag t-grey">主归属</span>'}</td>
+      <td>${m.t}</td>
+      <td class="row-actions">
+        ${m.leader?'<a class="disabled">设为负责人</a>':`<a onclick="setLeader('${t.id}',${i})">设为负责人</a>`}
+        <a onclick="moveMember('${t.id}',${i})">换团队</a>
+        <a onclick="rmMember('${t.id}',${i})">移出</a>
+      </td></tr>`).join('')}</tbody></table>
+    ${t.members.length===1&&!t.leader?`<div class="note" style="margin-top:8px;border-color:#e6a23c;background:#fffaf0">单人团队且未指定负责人 —— 点上方「设为负责人」一键指定（<b>系统不自动指定</b>，避免隐式提权）。</div>`:''}`;
 }
-
+function setLeader(tid,idx){
+  const t=findTeam(TEAMS,tid); t.members.forEach((m,k)=>m.leader=(k===idx)); t.leader=t.members[idx].n;
+  renderTree(); toast('已指定负责人：'+t.leader+'（负责人同时也是团队成员）');
+  addAudit('指定团队负责人','团队 '+t.name,'',t.leader);
+}
+function rmMember(tid,idx){
+  const t=findTeam(TEAMS,tid); const m=t.members[idx];
+  if(m.leader&&t.members.length>1){toast('该成员是负责人，请先改指定其他成员为负责人');return}
+  t.members.splice(idx,1); if(m.leader)t.leader='';
+  renderTree(); toast('已移出（写 leaveTime，历史留痕）');
+}
+function moveMember(tid,idx){
+  const t=findTeam(TEAMS,tid); const names=[]; eachTeam(TEAMS,x=>{if(x.id!==tid)names.push(x)});
+  showModal('换团队 · '+t.members[idx].n,
+   `<div class="note">换团队 = 关闭旧归属（写 leaveTime）+ 在新团队新增归属，历史留痕、不影响他人。</div>
+    <div class="fld"><label>目标团队</label><select id="mv_t">${names.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div>
+    <div class="fld" style="margin-top:10px"><label>归属类型</label><select id="mv_mt"><option>主归属</option><option>虚线归属</option></select></div>`,
+   '确认换团队',()=>{
+     const to=findTeam(TEAMS,document.getElementById('mv_t').value);
+     const mt=document.getElementById('mv_mt').value; const m=t.members[idx];
+     if(to.members.some(x=>x.n===m.n)){toast('该成员已在目标团队（有效归属唯一，不可重复加入）');return}
+     if(mt==='主归属'){to.members.forEach(x=>{if(x.n===m.n)x.mt='虚线归属'})}
+     to.members.push({n:m.n,leader:false,mt:mt,t:new Date().toISOString().slice(0,10)});
+     t.members.splice(idx,1); if(m.leader)t.leader='';
+     closeModal(); renderTree(); toast('已换团队 → '+to.name);
+     addAudit('成员换团队','用户 '+m.n,t.name,to.name+'（'+mt+'）');
+   });
+}
+function openMemberModal(tid){
+  const t=findTeam(TEAMS,tid);
+  showModal('添加成员 · '+t.name,
+   `<div class="note">同一人在同一团队<b>只能有 1 条有效归属</b>，重复添加会被拦截；历史已离开的可重新加入。<b>主归属全局唯一</b>。</div>
+    <div class="fld"><label>成员</label><select id="am_n"><option>吴浩</option><option>刘晓</option><option>钱亮</option><option>赵凯</option><option>林静</option><option>孙磊</option><option>陈总</option><option>李蒙</option></select></div>
+    <div class="fld" style="margin-top:10px"><label>归属类型</label><select id="am_mt"><option>主归属</option><option>虚线归属</option></select></div>
+    <div class="fld" style="margin-top:10px"><label>是否设为负责人</label><select id="am_l"><option value="no">否（默认，需手动指定）</option><option value="yes">是</option></select></div>`,
+   '添加',()=>{
+     const n=document.getElementById('am_n').value, mt=document.getElementById('am_mt').value, isL=document.getElementById('am_l').value==='yes';
+     if(t.members.some(x=>x.n===n)){toast('该成员已在本团队（有效归属唯一）');return}
+     if(mt==='主归属'){eachTeam(TEAMS,x=>x.members.forEach(m=>{if(m.n===n&&m.mt==='主归属')m.mt='虚线归属'}))}
+     if(isL)t.members.forEach(m=>m.leader=false);
+     t.members.push({n:n,leader:isL,mt:mt,t:new Date().toISOString().slice(0,10)});
+     if(isL)t.leader=n;
+     closeModal(); renderTree(); toast('已添加成员：'+n);
+     addAudit('添加团队成员','团队 '+t.name,'',n+'（'+mt+(isL?'，负责人':'')+'）');
+   });
+}
+function openTeamModal(mode,tid){
+  const t=tid?findTeam(TEAMS,tid):null;
+  const all=[]; eachTeam(TEAMS,x=>all.push(x));
+  showModal(mode==='add'?'新增团队':'编辑团队 · '+t.name,
+   `<div class="fld"><label><span class="req">*</span>团队名称</label><input id="tm_n" value="${t?t.name:''}" placeholder="如 商务三组"></div>
+    <div class="fld" style="margin-top:10px"><label><span class="req">*</span>条线类型</label><select id="tm_ty"><option>商务</option><option>销售</option><option>运营</option><option>财务</option></select></div>
+    <div class="fld" style="margin-top:10px"><label>上级团队（支持任意层级）</label><select id="tm_p"><option value="">（顶级团队）</option>${all.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}</select></div>
+    <div class="fld" style="margin-top:10px"><label>关联业务线</label><input id="tm_b" value="${t?t.biz.join(','):''}" placeholder="逗号分隔"></div>
+    <div class="note" style="margin-top:10px">新建团队<b>不自动指定负责人</b>；创建后在成员列表手动「设为负责人」。负责人可暂时为空，但会进入健康检查提示。</div>`,
+   mode==='add'?'创建':'保存',()=>{
+     const n=document.getElementById('tm_n').value.trim(); if(!n){toast('请填写团队名称');return}
+     const biz=document.getElementById('tm_b').value.split(',').map(x=>x.trim()).filter(Boolean);
+     if(mode==='add'){
+       const pid=document.getElementById('tm_p').value;
+       const nt={id:'t'+Date.now(),name:n,type:document.getElementById('tm_ty').value,leader:'',biz:biz,members:[],children:[]};
+       (pid?findTeam(TEAMS,pid):TEAMS).children.push(nt); SEL_TEAM=nt.id;
+       addAudit('新增团队','团队 '+n,'',(pid?'挂在 '+findTeam(TEAMS,pid).name:'顶级团队'));
+     }else{ t.name=n; t.type=document.getElementById('tm_ty').value; t.biz=biz; addAudit('编辑团队','团队 '+n,'',''); }
+     closeModal(); renderTree(); toast(mode==='add'?'团队已创建（未指定负责人）':'团队已保存');
+   });
+}
+function delTeam(tid){
+  const t=findTeam(TEAMS,tid);
+  if(t.members.length||(t.children&&t.children.length)){toast('团队下存在成员或下级团队，需先迁出/迁移');return}
+  showModal('停用团队 · '+t.name, `<div class="note">建议<b>停用</b>而非物理删除，保留历史归属与合同的团队归属痕迹。</div>`,'确认停用',()=>{
+    (function rm(n){n.children=(n.children||[]).filter(c=>c.id!==tid); (n.children||[]).forEach(rm)})(TEAMS);
+    SEL_TEAM='t1'; closeModal(); renderTree(); toast('团队已停用'); addAudit('停用团队','团队 '+t.name,'','');
+  });
+}
 /* ============ 数据范围 ============ */
 const MATRIX=[
   ['销售（普通）','✓','✓','✗','✓(名下)','✓','本人'],
@@ -778,12 +893,14 @@ const MATRIX=[
   ['IIB总经理','按需','按需(审批)','✗','✗','✓','全量(只读为主)'],
 ];
 function renderMatrix(){
-  document.getElementById('matrixBody').innerHTML=MATRIX.map(r=>`<tr><td style="font-weight:600">${r[0]}</td>${r.slice(1,6).map(c=>`<td style="text-align:center;color:${c.startsWith('✓')?'#16a34a':c==='✗'?'#c0c4cc':'#e6a23c'}">${c}</td>`).join('')}<td><span class="tag t-blue">${r[6]}</span></td></tr>`).join('');
+  const mb=document.getElementById('matrixBody');
+  if(mb) mb.innerHTML=MATRIX.map(r=>`<tr><td style="font-weight:600">${r[0]}</td>${r.slice(1,6).map(c=>`<td style="text-align:center;color:${c.startsWith('✓')?'#16a34a':c==='✗'?'#c0c4cc':'#e6a23c'}">${c}</td>`).join('')}<td><span class="tag t-blue">${r[6]}</span></td></tr>`).join('');
   // 组织维度点选
   document.querySelectorAll('#scopeOrg .scope-card').forEach(c=>c.onclick=()=>{document.querySelectorAll('#scopeOrg .scope-card').forEach(x=>x.classList.remove('on'));c.classList.add('on')});
   // 业务线维度 chips
   const all=['海外-广告DSP','海外-广告效果'];
-  document.getElementById('scopeBiz').innerHTML=all.map(b=>`<span class="chip">${b}<span class="rm" onclick="this.parentNode.remove()">×</span></span>`).join('')+`<span class="chip" style="background:#e8f1ff;color:#3981ff;cursor:pointer" onclick="toast('演示：添加业务线（默认取团队业务线）')">+ 添加</span>`;
+  const sb=document.getElementById('scopeBiz');
+  if(sb) sb.innerHTML=all.map(b=>`<span class="chip">${b}<span class="rm" onclick="this.parentNode.remove()">×</span></span>`).join('')+`<span class="chip" style="background:#e8f1ff;color:#3981ff;cursor:pointer" onclick="toast('演示：添加业务线（默认取团队业务线）')">+ 添加</span>`;
 }
 
 /* ============ 单合同授权 ============ */
@@ -1003,6 +1120,74 @@ function renderSandbox(){
 
 
 
+
+/* ============ 功能权限点配置（可勾选） ============ */
+const PP_TREE=[
+ {m:'付款合同',fs:[
+   {f:'合同',ops:['查看','创建','编辑','复制','删除草稿','提交','撤销提交','作废','导出报表','查看操作记录','暂停合作','恢复合作']},
+   {f:'盖章',ops:['提交集团盖章','终止盖章']},
+   {f:'列表快捷入口（须审批通过后可用）',ops:['填写/覆盖合同编号','更改合同签署阶段','更改DPA签署阶段','更改NDA签署阶段','填写DPA/NDA编号','回收合同附件']},
+   {f:'权限转移',ops:['转移合同业绩','转移(添加)运营权限','转移(添加)销售商务合同权限']},
+   {f:'结算',ops:['手动推送合同至结算','批量拉取财务系统']},
+ ]},
+ {m:'权限与组织',fs:[
+   {f:'管理',ops:['用户管理','角色管理','团队管理','数据权限规则配置']},
+ ]},
+ {m:'系统',fs:[
+   {f:'配置',ops:['业务线字典','可配置字段','审计日志查看']},
+ ]},
+];
+const PP_DEFAULT={
+ saleAdmin:{'查看':'r','查看操作记录':'r','导出报表':'w','提交集团盖章':'w','终止盖章':'w',
+   '填写/覆盖合同编号':'w','更改合同签署阶段':'w','更改DPA签署阶段':'w','更改NDA签署阶段':'w','填写DPA/NDA编号':'w','回收合同附件':'w','作废':'w'},
+ sales:{'查看':'r','创建':'w','编辑':'w','复制':'w','删除草稿':'w','提交':'w','撤销提交':'w','作废':'w','导出报表':'w','查看操作记录':'r',
+   '暂停合作':'w','恢复合作':'w','转移合同业绩':'w','转移(添加)销售商务合同权限':'w'},
+ bizLead:{'查看':'r','创建':'w','编辑':'w','复制':'w','提交':'w','撤销提交':'w','作废':'w','导出报表':'w','查看操作记录':'r','暂停合作':'w','恢复合作':'w','转移(添加)销售商务合同权限':'w'},
+ ops:{'查看':'r','导出报表':'w','查看操作记录':'r','转移(添加)运营权限':'w'},
+ finance:{'查看':'r','导出报表':'w','查看操作记录':'r','手动推送合同至结算':'w','批量拉取财务系统':'w'},
+ abc:{'查看':'r','创建':'w'},
+};
+let PP_STATE={};
+function ppKey(){return (document.getElementById('ppRole')||{value:'saleAdmin'}).value}
+function renderPP(){
+  const box=document.getElementById('ppTree'); if(!box)return;
+  const role=ppKey();
+  if(!PP_STATE[role]) PP_STATE[role]=Object.assign({},PP_DEFAULT[role]||{});
+  const st=PP_STATE[role];
+  box.innerHTML=PP_TREE.map(mod=>`
+    <div style="border:1px solid #eef0f3;border-radius:8px;margin-bottom:10px;overflow:hidden">
+      <div style="background:#fafbfc;padding:8px 12px;font-weight:700;font-size:13px">${mod.m}</div>
+      ${mod.fs.map(fn=>`
+        <div style="padding:8px 12px;border-top:1px solid #f5f6f8">
+          <div style="font-size:12px;color:#606266;margin-bottom:6px">${fn.f}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${fn.ops.map(op=>{
+              const v=st[op]||'';
+              const cls = v==='w'?'background:#e8f1ff;border-color:#3981ff;color:#3981ff'
+                        : v==='r'?'background:#e6fff0;border-color:#16a34a;color:#16a34a'
+                        : 'background:#fff;border-color:#dcdfe6;color:#909399';
+              return `<span onclick="ppToggle('${op.replace(/'/g,"")}')" title="点击切换：未授权 → 读 → 写"
+                style="cursor:pointer;user-select:none;border:1px solid;border-radius:14px;padding:3px 10px;font-size:11.5px;${cls}">
+                ${op}${v?`　<b>${v==='w'?'写':'读'}</b>`:''}</span>`;
+            }).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`).join('')
+    + `<div class="hint">点击权限点在「未授权 → 读 → 写」间切换。当前角色已授权 <b>${Object.keys(st).length}</b> 项。</div>`;
+}
+function ppToggle(op){
+  const role=ppKey(); const st=PP_STATE[role]||(PP_STATE[role]={});
+  st[op] = st[op]==='r' ? 'w' : (st[op]==='w' ? undefined : 'r');
+  if(!st[op]) delete st[op];
+  renderPP();
+}
+function ppPreset(k){
+  const role=ppKey();
+  if(k==='none'){PP_STATE[role]={};}
+  else if(k==='read'){const st={};PP_TREE.forEach(m=>m.fs.forEach(f=>f.ops.forEach(o=>{if(o.indexOf('查看')>=0||o.indexOf('导出')>=0)st[o]='r'})));PP_STATE[role]=st;}
+  renderPP(); toast('演示：已应用预设');
+}
+
 /* ============ 签约信息：多我方主体 / 多客户 ============ */
 const OUR_OPTS=['Xiaomi H.K. Limited','Xiaomi Singapore Pte.','Xiaomi Technology India'];
 const REG_MAP={'Xiaomi H.K. Limited':'中国','Xiaomi Singapore Pte.':'新加坡','Xiaomi Technology India':'印度'};
@@ -1176,7 +1361,14 @@ function renderRemind(){
 }
 
 /* ============ 初始化 ============ */
-renderList();renderMatrix();renderTree();renderGrant();renderMachine();renderSandbox();renderRemind();onRoleChange();
+[renderList,renderMatrix,renderPP,renderTree,renderGrant,renderMachine,renderSandbox,renderRemind,onRoleChange].forEach(f=>{try{f()}catch(e){console.warn('init warn:',f.name,e.message)}});
+/* 支持 #hash 深链（便于评审直达某页 / 截图） */
+(function(){
+  let t=(location.hash||'').replace('#','');
+  if(!t){const m=(location.search||'').match(/[?&]page=([a-z]+)/); if(m)t=m[1];}
+  if(t&&document.getElementById('page-'+t))go(t);
+})();
+window.addEventListener('hashchange',()=>{const h=(location.hash||'').replace('#','');if(h&&document.getElementById('page-'+h))go(h);});
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeModal()});
 </script>
 </body>
