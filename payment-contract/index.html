@@ -582,15 +582,14 @@ const FORM_HTML=`
 
 <div class="form-section"><div class="form-section-head"><span class="idx">6</span>盖章信息</div><div class="form-grid">
   <div class="fld"><label><span class="req">*</span>合同类型（三级级联）</label><select><option>采购类 / 服务采购 / 服务采购</option><option>采购类 / 服务采购 / 技术服务</option><option>业务合作类 / 广告投放 / 广告投放</option></select><div class="hint">与集团完全一致：由 loadContractTypes 动态拉取，传各级 typeCode 逗号串（如 CCZLL,FWZL,ZCZL）</div></div>
-  <div class="fld"><label><span class="req">*</span>费用类型</label><select><option value="OTHER" selected>其他（OTHER，默认）</option><option value="SCFY">市场费用（SCFY）</option><option>售后</option><option>客服</option><option>零售费用</option><option>行政费用</option><option>新零售费用</option></select><div class="hint">与集团页面一致共 7 项；已知编码 OTHER/SCFY，其余待集团提供</div></div>
+  <div class="fld"><label><span class="req">*</span>费用类型</label><select><option value="OTHER" selected>其他（OTHER，默认）</option><option value="SCFY">市场费用（SCFY）</option><option>售后</option><option>客服</option><option>零售费用</option><option>行政费用</option><option>新零售费用</option></select><div class="hint">业务已确认统一选「其他(OTHER)」；保留下拉以备后续场景</div></div>
   <div class="fld"><label><span class="req">*</span>合同的需求发出人</label><input placeholder="邮箱（建议取商务对接人）"><div class="hint">传集团 requirementProposer（邮箱前缀），与 createUserId（合同创建人）不同</div></div>
   <div class="fld"><label><span class="req">*</span>合同份数</label><input type="number" value="2"></div>
   <div class="fld"><label><span class="req">*</span>合同页数</label><input type="number"></div>
   <div class="fld"><label><span class="req">*</span>是否使用小米模板</label><select><option>是</option><option>否</option></select></div>
   <div class="fld"><label>是否电子签约</label><select id="f_esign" onchange="linkEsign()"><option value="no">否</option><option value="yes">是</option></select></div>
-  <div class="fld hidden esign"><label><span class="req">*</span>签约双方是否包含境内主体</label><select><option>否</option><option>是</option></select><div class="hint">国外及港澳台地区电子签不支持与对方境内主体进行电子签</div></div>
-  <div class="fld hidden esign" id="w_abroad"><label><span class="req">*</span>是否海外及港澳台地区签约</label><select id="f_abroad" onchange="linkAbroad()"><option value="no">否（国内签）</option><option value="yes">是（海外/港澳台）</option></select></div>
-  <div class="fld hidden esign" id="w_platform"><label><span class="req">*</span>签约平台</label><select><option>e签宝</option><option>法大大</option></select></div>
+  <div class="fld hidden esign"><label><span class="req">*</span>签约双方是否包含境内主体</label><select id="f_domestic" onchange="linkDomestic()"><option value="no">否</option><option value="yes">是</option></select><div class="hint" id="domestic_hint">海外/港澳台电子签不支持对方为境内主体</div></div>
+  <div class="fld hidden esign" id="w_abroad"><label><span class="req">*</span>是否海外及港澳台地区签约</label><select id="f_abroad" onchange="linkAbroad()"><option value="yes" selected>是（海外/港澳台）</option><option value="no">否（国内签）</option></select><div class="hint" id="abroad_hint">本期只做海外电子签</div></div>
   <div class="fld hidden esign" id="w_platformAbroad"><label><span class="req">*</span>海外签约平台</label><select><option>Adobe</option><option>DocuSign</option></select></div>
   <div class="fld hidden esign"><label><span class="req">*</span>电子签约方</label><select id="f_parties" onchange="renderSignParties()"><option value="2">双方签</option><option value="3">三方签</option><option value="4">四方签</option></select><div class="hint">签署顺序按方数自动匹配 1..N</div></div>
   <div class="fld hidden esign" style="grid-column:1/-1"><label><span class="req">*</span>电子签约信息（按方数逐行填写）</label>
@@ -651,10 +650,20 @@ function calcShare(){const o=parseFloat(document.getElementById('f_shareO').valu
 function linkGuar(){const y=document.getElementById('f_guar').value==='yes';show('w_guar',y);show('w_guarCur',y)}
 function linkDeposit(){const y=document.getElementById('f_deposit').value==='yes';show('w_deposit',y);show('w_depositCur',y)}
 function linkEsign(){const y=document.getElementById('f_esign').value==='yes';document.querySelectorAll('.esign').forEach(e=>e.classList.toggle('hidden',!y));if(y)linkAbroad();}
-function linkAbroad(){const ab=document.getElementById('f_abroad').value==='yes';show('w_platform',!ab);show('w_platformAbroad',ab)}
+function linkAbroad(){
+  const ab=document.getElementById('f_abroad').value==='yes';
+  show('w_platformAbroad',ab);
+  const h=document.getElementById('abroad_hint');
+  if(h){h.textContent = ab ? '本期只做海外电子签' : '⚠ 本期不支持国内电子签，请改为线下签署';h.style.color = ab?'#c0c4cc':'#f44336';}
+}
+function linkDomestic(){
+  const el=document.getElementById('f_domestic'); if(!el)return;
+  const yes=el.value==='yes'; const h=document.getElementById('domestic_hint');
+  if(h){h.textContent = yes ? '⚠ 含境内主体 → 不可走电子签，请改为线下签署' : '海外/港澳台电子签不支持对方为境内主体';h.style.color = yes?'#f44336':'#c0c4cc';}
+}
 function linkIsOurs(){const ours=document.getElementById('f_isours').value==='yes';show('w_ourCompany',ours);show('w_custCompany',!ours);['w_ourEmail','w_ourCc','w_otherEmail','w_otherCc'].forEach(x=>show(x,!ours))}
 function show(id,cond){const el=document.getElementById(id);if(el)el.classList.toggle('hidden',!cond)}
-function bindFormLinkage(){renderOur();renderCust();linkRate();renderSignParties();renderAttach();
+function bindFormLinkage(){renderOur();renderCust();linkRate();linkDomestic();renderSignParties();renderAttach();
   const sv=document.getElementById('f_signValid');
   if(sv&&!sv.value){const d=new Date();d.setDate(d.getDate()+30);sv.value=d.toISOString().slice(0,10);}linkBiz();linkForm();linkRenew();linkPause();linkDpa();linkNda();linkCycle();linkPay();linkCps();linkGuar();linkDeposit();linkEsign();linkIsOurs()}
 
